@@ -1,7 +1,7 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '../layouts/AdminLayout.vue'
-import AuthLayout from '../layouts/AuthLayout.vue' // Import layout mới
+import AuthLayout from '../layouts/AuthLayout.vue'
 import DashboardView from '../views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -11,98 +11,53 @@ const router = createRouter({
     {
       path: '/',
       component: AdminLayout,
-      meta: { requiresAuth: true }, // Đánh dấu nhóm route này cần đăng nhập
+      meta: { requiresAuth: true },
       children: [
-        // ... các route con của admin layout
-        {
-          path: '',
-          name: 'dashboard',
-          component: DashboardView
-        },
-        {
-            path: 'employees',
-            name: 'employees',
-            component: () => import('../modules/user/views/EmployeeList.vue')
-        }
+        // Routes đã có...
+        { path: '', name: 'dashboard', component: DashboardView },
+        { path: 'customers', name: 'customers-list', component: () => import('../modules/user/views/CustomerList.vue') },
+        { path: 'employees', name: 'employees', component: () => import('../modules/user/views/EmployeeList.vue') },
+        { path: 'roles', name: 'roles', component: () => import('../modules/user/views/RoleList.vue') },
+        { path: 'permissions', name: 'permissions', component: () => import('../modules/user/views/PermissionList.vue') },
+        { path: 'activity-logs', name: 'activity-logs', component: () => import('../modules/user/views/ActivityLogList.vue') },
+        { path: 'orders', name: 'orders-list', component: () => import('../modules/sale/views/OrderList.vue') },
+        { path: 'orders/:id', name: 'order-details', component: () => import('../modules/sale/views/OrderDetail.vue'), props: true },
+        { path: 'promotions', name: 'promotions-list', component: () => import('../modules/sale/views/PromotionList.vue') },
+        { path: 'purchase-orders', name: 'purchase-orders-list', component: () => import('../modules/supplychain/views/PurchaseOrderList.vue') },
+        { path: 'purchase-orders/create', name: 'purchase-order-create', component: () => import('../modules/supplychain/views/PurchaseOrderDetail.vue') },
+        { path: 'purchase-orders/:id', name: 'purchase-order-detail', component: () => import('../modules/supplychain/views/PurchaseOrderDetail.vue'), props: true },
+        { path: 'suppliers', name: 'suppliers', component: () => import('../modules/supplychain/views/SupplierList.vue') },
+        { path: 'warehouses', name: 'warehouses', component: () => import('../modules/supplychain/views/WarehouseList.vue') },
+        { path: 'products', name: 'products-list', component: () => import('../modules/product/views/ProductList.vue') },
+        { path: 'products/create', name: 'product-create', component: () => import('../modules/product/views/ProductEdit.vue') },
+        { path: 'products/edit/:id', name: 'product-edit', component: () => import('../modules/product/views/ProductEdit.vue'), props: true },
+        { path: 'categories', name: 'categories', component: () => import('../modules/product/views/CategoryList.vue') },
+        { path: 'brands', name: 'brands', component: () => import('../modules/product/views/BrandList.vue') },
+        { path: 'accounts', name: 'accounts-list', component: () => import('../modules/finance/views/AccountList.vue') },
+        { path: 'reports/revenue', name: 'report-revenue', component: () => import('../modules/finance/views/RevenueReport.vue') },
       ]
     },
     {
       path: '/auth',
       component: AuthLayout,
       children: [
-        {
-          path: 'login',
-          name: 'login',
-          component: () => import('../views/LoginView.vue')
-        }
+        { path: 'login', name: 'login', component: () => import('../views/LoginView.vue') },
+        // *** CÁC ROUTE MỚI ***
+        { path: 'register', name: 'register', component: () => import('../views/RegisterView.vue') },
+        { path: 'forgot-password', name: 'forgot-password', component: () => import('../views/ForgotPasswordView.vue') },
+        { path: 'reset-password', name: 'reset-password', component: () => import('../views/ResetPasswordView.vue') },
       ]
-    },
-    {
-    path: 'roles',
-    name: 'roles',
-    component: () => import('../modules/user/views/RoleList.vue')
-  },
-  {
-    path: 'permissions',
-    name: 'permissions',
-    component: () => import('../modules/user/views/PermissionList.vue')
-  },
-  {
-        path: 'suppliers',
-        name: 'suppliers',
-        component: () => import('../modules/supplychain/views/SupplierList.vue')
-      },
-      {
-        path: 'warehouses',
-        name: 'warehouses',
-        component: () => import('../modules/supplychain/views/WarehouseList.vue')
-      },
-      {
-        path: 'products',
-        name: 'products',
-        component: () => import('../modules/product/views/ProductList.vue')
-      },
-      {
-        path: 'categories',
-        name: 'categories',
-        component: () => import('../modules/product/views/CategoryList.vue')
-      },
-      {
-        path: 'brands',
-        name: 'brands',
-        component: () => import('../modules/product/views/BrandList.vue')
-      },
-      {
-            path: 'products',
-            name: 'products-list', // Đổi tên để rõ ràng hơn
-            component: () => import('../modules/product/views/ProductList.vue')
-        },
-        {
-            // Route cho trang thêm mới sản phẩm
-            path: 'products/create',
-            name: 'product-create',
-            component: () => import('../modules/product/views/ProductEdit.vue')
-        },
-        {
-            // Route cho trang chỉnh sửa sản phẩm
-            path: 'products/edit/:id',
-            name: 'product-edit',
-            component: () => import('../modules/product/views/ProductEdit.vue'),
-            props: true // Tự động truyền :id vào làm prop
-        },
-    ]
-  })
+    }
+  ]
+})
 
-// Navigation Guard: "Người gác cổng"
+// Navigation Guard
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-
   if (requiresAuth && !authStore.isAuthenticated) {
-    // Nếu route yêu cầu đăng nhập và người dùng chưa đăng nhập
-    next({ name: 'login' }); // Chuyển hướng đến trang login
+    next({ name: 'login' });
   } else {
-    // Nếu không, cho phép đi tiếp
     next();
   }
 });

@@ -11,20 +11,18 @@
           <li class="nav-item" v-if="isEditMode">
             <a class="nav-link" data-bs-toggle="tab" href="#variants">Biến thể</a>
           </li>
-          </ul>
+        </ul>
       </div>
 
       <div class="card-body">
-        <div class="tab-content">
+        <div class="tab-content p-2">
           <div class="tab-pane fade show active" id="info">
-            <h4>Thông tin cơ bản</h4>
-            <p>Điền các thông tin chính của sản phẩm.</p>
-            </div>
+            <ProductInfoForm :product-id="id" @product-saved="onProductSaved" />
+          </div>
 
           <div class="tab-pane fade" id="variants" v-if="isEditMode">
-             <h4>Quản lý Biến thể</h4>
-             <p>Thêm hoặc chỉnh sửa các phiên bản sản phẩm (màu sắc, dung lượng...).</p>
-             </div>
+             <VariantManager :product-id="id" />
+          </div>
         </div>
       </div>
     </div>
@@ -33,10 +31,24 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import ProductInfoForm from '../components/ProductInfoForm.vue';
+import VariantManager from '../components/VariantManager.vue'; // Import component mới
 
 const props = defineProps({
   id: String // Nhận id từ router
 });
 
+const router = useRouter();
 const isEditMode = computed(() => !!props.id);
+
+const onProductSaved = (productId) => {
+  alert('Lưu sản phẩm thành công!');
+  // Nếu là tạo mới, chuyển hướng đến trang sửa để có thể thêm biến thể
+  if (!isEditMode.value) {
+    router.push({ name: 'product-edit', params: { id: productId } });
+  } else {
+    router.push({ name: 'products-list' });
+  }
+}
 </script>

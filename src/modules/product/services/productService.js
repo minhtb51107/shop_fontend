@@ -1,12 +1,20 @@
 // src/modules/product/services/productService.js
+import axios from 'axios';
 import api from '@/services/api';
 
-// API base path is now /api, not /api/v1
+// API base path is /api for product, brand, category based on your backend controllers
 const apiProduct = axios.create({
   baseURL: 'http://localhost:8080/api',
-  // Interceptors will be inherited from the original api instance if we don't redefine
 });
 
+// Use interceptor to add token to this instance as well
+apiProduct.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const brandService = {
   getAll: () => apiProduct.get('/brands'),
@@ -28,7 +36,7 @@ export const productService = {
   create: (data) => apiProduct.post('/products', data),
   update: (id, data) => apiProduct.put(`/products/${id}`, data),
   delete: (id) => apiProduct.delete(`/products/${id}`),
-
+  
   // Variants
   getVariantsForProduct: (productId) => apiProduct.get(`/products/${productId}/variants`),
   createVariant: (productId, data) => apiProduct.post(`/products/${productId}/variants`, data),
