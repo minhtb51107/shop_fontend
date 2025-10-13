@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Bỏ baseURL đi, chúng ta sẽ dùng đường dẫn tương đối để proxy xử lý
+  baseURL: 'http://localhost:8080/api/v1', // Đặt baseURL chuẩn là /api/v1
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,8 +14,6 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
 
 export default api;

@@ -116,13 +116,13 @@
             <div class="dropdown">
                 <a href="#" class="d-flex align-items-center link-dark text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
                     <img src="https://via.placeholder.com/32" alt="" width="32" height="32" class="rounded-circle me-2">
-                    <strong>Admin</strong>
+                    <strong>{{ authStore.user?.fullname || 'Admin' }}</strong>
                 </a>
                 <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
                     <li><a class="dropdown-item" href="#">Profile</a></li>
                     <li><a class="dropdown-item" href="#">Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                    <li><a class="dropdown-item" href="#" @click.prevent="authStore.logout()">Đăng xuất</a></li>
                 </ul>
             </div>
         </div>
@@ -135,7 +135,10 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { useAuthStore } from '@/stores/auth';
+const authStore = useAuthStore();
+</script>
 
 <style scoped>
 .nav-link.active {

@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user')),
     accessToken: localStorage.getItem('accessToken'),
+    refreshToken: localStorage.getItem('refreshToken'),
   }),
   getters: {
     isAuthenticated: (state) => !!state.accessToken,
@@ -15,11 +16,12 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(credentials) {
       try {
-        // API path giờ là tương đối
-        const response = await api.post('/api/v1/auth/login', credentials);
-        const { accessToken } = response.data;
+        const response = await api.post('/auth/login', credentials);
+        const { accessToken, refreshToken } = response.data;
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken); // Lưu refreshToken
         await this.fetchUser();
         router.push('/');
       } catch (error) {
@@ -28,13 +30,11 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async fetchUser() {
-      if (this.accessToken) {
-        try {
-          const response = await api.get('/api/v1/auth/me');
-          this.user = response.data;
-          localStorage.setItem('user', JSON.stringify(this.user));
-        } catch (error) { this.logout(); }
-      }
+        if (this.accessToken) {
+            const response = await api.get('/auth/me');
+            this.user = response.data;
+            localStorage.setItem('user', JSON.stringify(this.user));
+        }
     },
     logout() {
       this.user = null;
@@ -67,6 +67,23 @@ export const useAuthStore = defineStore('auth', {
             console.error('Password reset failed:', error);
             throw error;
         }
+    },
+        async logout() {
+      try {
+        // Gọi API backend để vô hiệu hóa token
+        await api.post('/auth/logout', { refreshToken: this.refreshToken });
+      } catch (error) {
+        console.error("Logout API call failed, proceeding with client-side logout.", error);
+      } finally {
+        // Dù API có lỗi hay không, vẫn xóa thông tin ở client
+        this.user = null;
+        this.accessToken = null;
+        this.refreshToken = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        router.push('/auth/login');
+      }
     },
     // *** HÀM MỚI CHO GOOGLE LOGIN ***
     async loginWithGoogle(idToken) {

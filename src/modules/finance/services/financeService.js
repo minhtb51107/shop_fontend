@@ -24,5 +24,5 @@ export const accountService = {
 };
 
 export const reportService = {
-  getRevenueReport: (params) => apiFinance.get('/reports/revenue', { params }), // { year: 2025, month: 10 }
+  getRevenueReport: (params) => api.get('/finance/reports/revenue', { params }),
 };

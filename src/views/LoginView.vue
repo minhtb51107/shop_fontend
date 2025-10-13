@@ -25,9 +25,7 @@
 
       <div class="divider text-center my-3"><span>HOẶC</span></div>
 
-      <button @click="handleGoogleLogin" class="btn btn-light border w-100">
-        <img src="https://img.icons8.com/color/16/000000/google-logo.png" class="me-2"/> Đăng nhập với Google
-      </button>
+      <div id="google-btn" class="d-flex justify-content-center"></div>
 
       <div class="text-center mt-4">
         <small>Chưa có tài khoản? <router-link :to="{ name: 'register' }">Tạo tài khoản mới</router-link></small>
@@ -37,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'; // inject
+import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
 const email = ref('admin@shop.com');
@@ -46,31 +44,39 @@ const error = ref('');
 const loading = ref(false);
 const authStore = useAuthStore();
 
-// Inject GAuth
-const Vue3GoogleOauth = inject('Vue3GoogleOauth');
-
 const handleLogin = async () => {
   loading.value = true;
   error.value = '';
   try {
     await authStore.login({ email: email.value, password: password.value });
   } catch (err) {
-    error.value = 'Email hoặc mật khẩu không chính xác.';
+    error.value = err.response?.data?.message || 'Email hoặc mật khẩu không chính xác.';
   } finally {
     loading.value = false;
   }
 };
 
-const handleGoogleLogin = async () => {
+// Hàm callback khi đăng nhập Google thành công
+const handleCredentialResponse = async (response) => {
+    const idToken = response.credential;
     try {
-        const googleUser = await Vue3GoogleOauth.instance.signIn();
-        const idToken = googleUser.getAuthResponse().id_token;
         await authStore.loginWithGoogle(idToken);
-    } catch (error) {
-        console.error("Google Sign-In error", error);
+    } catch (err) {
         error.value = "Đăng nhập với Google thất bại.";
     }
 };
+
+onMounted(() => {
+    // Khởi tạo nút đăng nhập Google
+    google.accounts.id.initialize({
+        client_id: '758520677856-j98pg9k2fju9545q0ffffmsnr9b1qtk9.apps.googleusercontent.com', // << THAY BẰNG CLIENT ID CỦA BẠN
+        callback: handleCredentialResponse
+    });
+    google.accounts.id.renderButton(
+        document.getElementById("google-btn"),
+        { theme: "outline", size: "large", width: "318" }  // Tùy chỉnh nút
+    );
+});
 </script>
 <style scoped>
 .divider { display: flex; align-items: center; }
