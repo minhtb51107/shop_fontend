@@ -82,7 +82,7 @@ watch(() => props.employeeData, (newData) => {
     form.value = { roleNames: [] }; // Reset form cho chế độ thêm mới
     isEditMode.value = false;
   }
-});
+}, { immediate: true });
 
 const submitForm = () => {
   // Gửi sự kiện ra component cha cùng với dữ liệu form
