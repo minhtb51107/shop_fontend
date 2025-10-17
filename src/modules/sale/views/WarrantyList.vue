@@ -1,28 +1,24 @@
 <template>
   <div>
-    <h2 class="mb-4">Quản lý Đơn hàng</h2>
+    <h2 class="mb-4">Quản lý Yêu cầu Bảo hành</h2>
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <form class="row g-3" @submit.prevent="fetchOrders">
-          <div class="col-md-3">
+        <form class="row g-3" @submit.prevent="fetchWarrantyCases">
+          <div class="col-md-4">
             <label class="form-label">Tìm kiếm</label>
-            <input v-model="filters.search" type="text" class="form-control" placeholder="Tìm theo mã đơn, tên KH...">
+            <input v-model="filters.search" type="text" class="form-control" placeholder="Tìm theo mã Y/C, số serial...">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <label class="form-label">Trạng thái</label>
             <select v-model="filters.status" class="form-select">
               <option value="">Tất cả</option>
-              <option value="PENDING">Chờ xử lý</option>
-              <option value="SHIPPING">Đang vận chuyển</option>
-              <option value="DELIVERED">Đã giao</option>
+              <option value="RECEIVED">Đã tiếp nhận</option>
+              <option value="IN_PROGRESS">Đang xử lý</option>
+              <option value="RESOLVED">Đã giải quyết</option>
               <option value="CANCELLED">Đã hủy</option>
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Ngày tạo</label>
-            <input v-model="filters.createdAt" type="date" class="form-control">
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
+          <div class="col-md-4 d-flex align-items-end">
             <button type="submit" class="btn btn-primary w-100">
               <i class="bi bi-search me-2"></i>Tìm kiếm
             </button>
@@ -39,37 +35,37 @@
           </div>
         </div>
         <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
-        <table v-else-if="orders.length > 0" class="table table-hover align-middle">
+        <table v-else-if="warrantyCases.length > 0" class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
-              <th>Mã ĐH</th>
+              <th>Mã Y/C</th>
               <th>Khách hàng</th>
-              <th>Ngày tạo</th>
-              <th>Tổng tiền</th>
+              <th>Mã sản phẩm</th>
+              <th>Mô tả</th>
               <th>Trạng thái</th>
               <th class="text-end">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="order in orders" :key="order.id">
-              <td>#{{ order.id }}</td>
-              <td>Khách hàng #{{ order.customerId }}</td>
-              <td>{{ formatDate(order.createdAt) }}</td>
-              <td class="fw-bold">{{ formatCurrency(order.grandTotal) }}</td>
+            <tr v-for="wc in warrantyCases" :key="wc.id">
+              <td>#{{ wc.id }}</td>
+              <td>Khách hàng #{{ wc.customerId }}</td>
+              <td>#{{ wc.orderItemId }}</td>
+              <td>{{ wc.description }}</td>
               <td>
-                <span class="badge" :class="getStatusClass(order.status)">
-                  {{ getStatusText(order.status) }}
+                <span :class="['badge', getStatusClass(wc.status)]">
+                  {{ getStatusText(wc.status) }}
                 </span>
               </td>
               <td class="text-end">
-                <router-link :to="{ name: 'order-details', params: { id: order.id } }" class="btn btn-sm btn-outline-primary">
+                <router-link :to="{ name: 'warranty-details', params: { id: wc.id } }" class="btn btn-sm btn-outline-primary">
                   <i class="bi bi-eye"></i> Xem chi tiết
                 </router-link>
               </td>
             </tr>
           </tbody>
         </table>
-        <div v-else class="text-center text-muted p-5">Không tìm thấy đơn hàng nào.</div>
+        <div v-else class="text-center text-muted p-5">Không tìm thấy yêu cầu bảo hành nào.</div>
         
         <nav v-if="totalPages > 1" aria-label="Page navigation">
           <ul class="pagination justify-content-center">
@@ -91,36 +87,34 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { orderService } from '../services/saleService';
+import { warrantyService } from '../services/saleService';
 
-const orders = ref([]);
+const warrantyCases = ref([]);
 const loading = ref(false);
 const error = ref('');
 const currentPage = ref(1);
 const totalPages = ref(1);
 const filters = ref({
     search: '',
-    status: '',
-    createdAt: ''
+    status: ''
 });
 
-const fetchOrders = async () => {
+const fetchWarrantyCases = async () => {
     loading.value = true;
     error.value = '';
     try {
         const params = {
             page: currentPage.value - 1,
-            size: 10, // Bạn có thể thay đổi số lượng đơn hàng trên mỗi trang tại đây
+            size: 10,
             search: filters.value.search || undefined,
             status: filters.value.status || undefined,
-            createdAt: filters.value.createdAt || undefined,
         };
-        const response = await orderService.getOrders(params);
-        orders.value = response.data.content;
+        const response = await warrantyService.getWarrantyCases(params);
+        warrantyCases.value = response.data.content;
         totalPages.value = response.data.totalPages;
     } catch (err) {
         console.error(err);
-        error.value = 'Không thể tải danh sách đơn hàng.';
+        error.value = 'Không thể tải danh sách yêu cầu bảo hành.';
     } finally {
         loading.value = false;
     }
@@ -129,29 +123,17 @@ const fetchOrders = async () => {
 const changePage = (page) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
-        fetchOrders();
+        fetchWarrantyCases();
     }
 };
 
-onMounted(fetchOrders);
-
-const formatCurrency = (value) => {
-    if (value === null || value === undefined) return '0 ₫';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN');
-};
+onMounted(fetchWarrantyCases);
 
 const getStatusClass = (status) => {
     switch (status) {
-        case 'PENDING': return 'bg-warning text-dark';
-        case 'CONFIRMED': return 'bg-info text-dark';
-        case 'SHIPPING': return 'bg-primary';
-        case 'DELIVERED': return 'bg-success';
+        case 'RECEIVED': return 'bg-info text-dark';
+        case 'IN_PROGRESS': return 'bg-warning text-dark';
+        case 'RESOLVED': return 'bg-success';
         case 'CANCELLED': return 'bg-danger';
         default: return 'bg-secondary';
     }
@@ -159,10 +141,9 @@ const getStatusClass = (status) => {
 
 const getStatusText = (status) => {
     const texts = {
-        'PENDING': 'Chờ xử lý',
-        'CONFIRMED': 'Đã xác nhận',
-        'SHIPPING': 'Đang vận chuyển',
-        'DELIVERED': 'Đã giao',
+        'RECEIVED': 'Đã tiếp nhận',
+        'IN_PROGRESS': 'Đang xử lý',
+        'RESOLVED': 'Đã giải quyết',
         'CANCELLED': 'Đã hủy'
     };
     return texts[status] || status;

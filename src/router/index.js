@@ -13,7 +13,6 @@ const router = createRouter({
       component: AdminLayout,
       meta: { requiresAuth: true },
       children: [
-        // Routes đã có...
         { path: '', name: 'dashboard', component: DashboardView },
         { path: 'customers', name: 'customers-list', component: () => import('../modules/user/views/CustomerList.vue') },
         { path: 'employees', name: 'employees', component: () => import('../modules/user/views/EmployeeList.vue') },
@@ -23,6 +22,12 @@ const router = createRouter({
         { path: 'orders', name: 'orders-list', component: () => import('../modules/sale/views/OrderList.vue') },
         { path: 'orders/:id', name: 'order-details', component: () => import('../modules/sale/views/OrderDetail.vue'), props: true },
         { path: 'promotions', name: 'promotions-list', component: () => import('../modules/sale/views/PromotionList.vue') },
+        // --- CÁC ROUTE MỚI CHO SALE MODULE ---
+        { path: 'returns', name: 'returns-list', component: () => import('../modules/sale/views/ReturnList.vue') },
+        { path: 'returns/:id', name: 'return-details', component: () => import('../modules/sale/views/ReturnDetail.vue'), props: true },
+        { path: 'warranty', name: 'warranty-list', component: () => import('../modules/sale/views/WarrantyList.vue') },
+        { path: 'warranty/:id', name: 'warranty-details', component: () => import('../modules/sale/views/WarrantyDetail.vue'), props: true },
+        // --- KẾT THÚC CÁC ROUTE MỚI ---
         { path: 'purchase-orders', name: 'purchase-orders-list', component: () => import('../modules/supplychain/views/PurchaseOrderList.vue') },
         { path: 'purchase-orders/create', name: 'purchase-order-create', component: () => import('../modules/supplychain/views/PurchaseOrderDetail.vue') },
         { path: 'purchase-orders/:id', name: 'purchase-order-detail', component: () => import('../modules/supplychain/views/PurchaseOrderDetail.vue'), props: true },
@@ -42,7 +47,6 @@ const router = createRouter({
       component: AuthLayout,
       children: [
         { path: 'login', name: 'login', component: () => import('../views/LoginView.vue') },
-        // *** CÁC ROUTE MỚI ***
         { path: 'register', name: 'register', component: () => import('../views/RegisterView.vue') },
         { path: 'forgot-password', name: 'forgot-password', component: () => import('../views/ForgotPasswordView.vue') },
         { path: 'reset-password', name: 'reset-password', component: () => import('../views/ResetPasswordView.vue') },
@@ -51,7 +55,6 @@ const router = createRouter({
   ]
 })
 
-// Navigation Guard
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
