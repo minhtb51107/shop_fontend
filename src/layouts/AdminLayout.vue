@@ -22,14 +22,14 @@
               <li class="nav-item">
                 <router-link to="/orders" class="nav-link text-white" active-class="active">Đơn hàng</router-link>
               </li>
+               <li class="nav-item">
+                <router-link to="/promotions" class="nav-link text-white" active-class="active">Khuyến mãi</router-link>
+              </li>
               <li class="nav-item">
-                <router-link to="/returns" class="nav-link text-white" active-class="active">Trả hàng</router-link>
+                <router-link to="/returns" class="nav-link text-white" active-class="active">Đổi/Trả hàng</router-link>
               </li>
               <li class="nav-item">
                 <router-link to="/warranty" class="nav-link text-white" active-class="active">Bảo hành</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link to="/promotions" class="nav-link text-white" active-class="active">Khuyến mãi</router-link>
               </li>
             </ul>
           </div>
