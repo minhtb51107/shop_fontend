@@ -35,9 +35,9 @@
                  <v-list-item-subtitle>{{ authStore.user.email }}</v-list-item-subtitle>
                </v-list-item>
                <v-divider></v-divider>
-              <v-list-item prepend-icon="mdi-account-circle-outline" title="Hồ sơ" to="/profile"></v-list-item>
-               <v-list-item prepend-icon="mdi-history" title="Lịch sử đơn hàng" to="/orders"></v-list-item> <v-divider></v-divider>
-              <v-list-item prepend-icon="mdi-logout" title="Đăng xuất" @click="handleLogout"></v-list-item>
+              <v-list-item prepend-icon="mdi-account-circle-outline" title="Hồ sơ" :to="{ name: 'profile' }"></v-list-item>
+<v-list-item prepend-icon="mdi-history" title="Lịch sử đơn hàng" :to="{ name: 'orders' }"></v-list-item> <v-divider></v-divider>
+<v-list-item prepend-icon="mdi-logout" title="Đăng xuất" @click="handleLogout"></v-list-item>
             </v-list>
           </v-menu>
         </div>

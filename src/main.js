@@ -20,6 +20,7 @@ app.use(router);
 app.use(vuetify);
 
 // --- SỬ DỤNG PLUGIN GOOGLE SIGN IN ---
+console.log('VITE_GOOGLE_CLIENT_ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID);
 app.use(GoogleSignInPlugin, {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID, // Lấy Client ID từ biến môi trường
 });

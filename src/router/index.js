@@ -11,10 +11,32 @@ import CheckoutView from '../views/CheckoutView.vue'; // <-- Import CheckoutView
 import OrderConfirmationView from '../views/OrderConfirmationView.vue'; // <-- Import trang xác nhận (sẽ tạo)
 import ForgotPasswordView from '../views/ForgotPasswordView.vue'; // <-- Import
 import ResetPasswordView from '../views/ResetPasswordView.vue';   // <-- Import
+import TermsView from '../views/TermsView.vue'; // Import component mới
+import OrderHistoryView from '../views/OrderHistoryView.vue'; // <-- Import view mới
+import OrderDetailView from '../views/OrderDetailView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+       path: '/orders',
+       name: 'orders',
+       component: OrderHistoryView,
+       meta: { title: 'Lịch Sử Đơn Hàng', requiresAuth: true } // Yêu cầu đăng nhập
+     },
+     {
+       path: '/orders/:id', // Route động với tham số id (là ID đơn hàng)
+       name: 'orderDetail',
+       component: OrderDetailView,
+       props: true, // Tự động truyền params (id) vào làm props
+       meta: { title: 'Chi Tiết Đơn Hàng', requiresAuth: true } // Yêu cầu đăng nhập
+     },
+    {
+    path: '/terms',
+    name: 'terms',
+    component: TermsView,
+    meta: { title: 'Điều Khoản Dịch Vụ' }
+    },
     {
       path: '/register',
       name: 'register',

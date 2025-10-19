@@ -34,8 +34,8 @@
       <v-list-subheader>Tài Khoản</v-list-subheader>
 
        <template v-if="isAuthenticated">
-          <v-list-item prepend-icon="mdi-account-circle-outline" title="Hồ sơ" to="/profile"></v-list-item>
-          <v-list-item prepend-icon="mdi-history" title="Lịch sử đơn hàng" to="/orders"></v-list-item>
+          <v-list-item prepend-icon="mdi-account-circle-outline" title="Hồ sơ" :to="{ name: 'profile' }"></v-list-item>
+<v-list-item prepend-icon="mdi-history" title="Lịch sử đơn hàng" :to="{ name: 'orders' }"></v-list-item> <v-list-item prepend-icon="mdi-logout" title="Đăng xuất" @click="emit('logout')"></v-list-item>
           <v-list-item prepend-icon="mdi-logout" title="Đăng xuất" @click="emit('logout')"></v-list-item>
        </template>
 

@@ -33,6 +33,28 @@ const orderService = {
         }
     },
 
+    /**
+   * Lấy lịch sử đơn hàng của người dùng hiện tại (có phân trang).
+   * @param {number} page - Số trang (bắt đầu từ 0).
+   * @param {number} size - Số lượng item mỗi trang.
+   * @returns {Promise<object>} - Đối tượng Page từ backend ({ content: [], totalElements, totalPages, ... })
+   */
+  getMyOrders: async (page = 0, size = 10) => {
+    try {
+      const response = await api.get('/orders/my-orders', {
+        params: {
+          page: page,
+          size: size,
+          sort: 'createdAt,desc' // Mặc định sắp xếp mới nhất trước
+        }
+      });
+      return response.data; // Trả về đối tượng Page
+    } catch (error) {
+      console.error('Error fetching my orders:', error);
+      throw error;
+    }
+  },
+
   // Thêm các hàm khác nếu cần (lấy lịch sử đơn hàng của user, hủy đơn hàng...)
 };
 
