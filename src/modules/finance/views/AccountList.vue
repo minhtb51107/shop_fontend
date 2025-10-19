@@ -20,7 +20,42 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="acc in accounts" :key="acc.id">
+            <!-- Loading State -->
+            <tr v-if="loading">
+              <td colspan="5" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Đang tải...</span>
+                </div>
+                <p class="mt-2 text-muted">Đang tải danh sách tài khoản...</p>
+              </td>
+            </tr>
+            
+            <!-- Error State -->
+            <tr v-else-if="error">
+              <td colspan="5" class="text-center py-4">
+                <div class="alert alert-danger mx-auto" style="max-width: 500px;">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  <strong>{{ error }}</strong>
+                  <div class="mt-3">
+                    <button class="btn btn-outline-danger btn-sm" @click="fetchAccounts">
+                      <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- Empty State -->
+            <tr v-else-if="accounts.length === 0">
+              <td colspan="5" class="text-center py-4">
+                <i class="bi bi-piggy-bank display-1 text-muted mb-3"></i>
+                <h5>Chưa có tài khoản nào</h5>
+                <p class="text-muted">Bắt đầu bằng cách thêm tài khoản mới</p>
+              </td>
+            </tr>
+            
+            <!-- Data Rows -->
+            <tr v-else v-for="acc in accounts" :key="acc.id">
               <td class="fw-bold">{{ acc.accountCode }}</td>
               <td>{{ acc.accountName }}</td>
               <td>{{ acc.accountType }}</td>
@@ -96,6 +131,8 @@ const modalRef = ref(null);
 const accounts = ref([]);
 const form = ref({});
 const isEditMode = ref(false);
+const loading = ref(false);
+const error = ref(null);
 
 onMounted(() => {
     fetchAccounts();
@@ -103,11 +140,51 @@ onMounted(() => {
 });
 
 const fetchAccounts = async () => {
+    loading.value = true;
+    error.value = null;
+    
     try {
+        console.log('🔍 Fetching finance accounts...');
         const response = await accountService.getAll();
-        accounts.value = response.data;
-    } catch (error) {
-        alert('Lỗi tải danh sách tài khoản!');
+        
+        // Handle response data properly
+        if (response && response.data) {
+            if (Array.isArray(response.data.content)) {
+                // Spring Page format
+                accounts.value = response.data.content || [];
+            } else if (Array.isArray(response.data)) {
+                // Direct array format
+                accounts.value = response.data || [];
+            } else {
+                accounts.value = [];
+                console.warn('Unexpected response format:', response.data);
+            }
+        } else {
+            accounts.value = [];
+            console.warn('No data in response');
+        }
+        
+        console.log(`✅ Loaded ${accounts.value.length} finance accounts`);
+    } catch (err) {
+        console.error('❌ Error loading finance accounts:', err);
+        
+        // Set empty state on error
+        accounts.value = [];
+        
+        // Handle different error types
+        if (err.response?.status === 500) {
+            error.value = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+        } else if (err.response?.status === 403) {
+            error.value = 'Không có quyền truy cập tài khoản tài chính. Vui lòng liên hệ quản trị viên.';
+        } else if (err.response?.status === 401) {
+            error.value = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+        } else if (err.code === 'ERR_NETWORK' || !err.response) {
+            error.value = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+        } else {
+            error.value = 'Không thể tải dữ liệu tài khoản. Vui lòng thử lại.';
+        }
+    } finally {
+        loading.value = false;
     }
 };
 

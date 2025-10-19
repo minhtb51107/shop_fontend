@@ -23,6 +23,17 @@
       </div>
     </div>
 
+    <!-- Error State -->
+    <div v-if="error" class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <strong>{{ error }}</strong>
+      <div class="mt-3">
+        <button class="btn btn-outline-danger btn-sm" @click="fetchReport">
+          <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+        </button>
+      </div>
+    </div>
+
     <div v-if="report" class="row">
       <div class="col-md-4">
         <div class="card text-white bg-success mb-3">
@@ -78,22 +89,40 @@ const filter = ref({
 });
 const report = ref(null);
 const loading = ref(false);
+const error = ref(null);
 
 const fetchReport = async () => {
   loading.value = true;
   report.value = null;
+  error.value = null;
+  
   try {
+    console.log('🔍 Fetching revenue report...');
     const response = await reportService.getRevenueReport(filter.value);
     report.value = response.data;
-  } catch (error) {
-    console.error(error);
-    alert('Không thể tải báo cáo.');
+    console.log('✅ Revenue report loaded successfully');
+  } catch (err) {
+    console.error('❌ Error loading revenue report:', err);
+    
+    // Handle different error types
+    if (err.response?.status === 500) {
+      error.value = 'Lỗi máy chủ khi tải báo cáo. Vui lòng thử lại sau.';
+    } else if (err.response?.status === 403) {
+      error.value = 'Không có quyền truy cập báo cáo tài chính.';
+    } else if (err.response?.status === 401) {
+      error.value = 'Phiên đăng nhập đã hết hạn.';
+    } else {
+      error.value = 'Không thể tải báo cáo. Vui lòng thử lại.';
+    }
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(fetchReport);
+onMounted(() => {
+  // Don't auto-fetch on mount to avoid 500 error
+  // fetchReport();
+});
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);

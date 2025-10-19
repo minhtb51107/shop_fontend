@@ -8,76 +8,114 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 const error = ref('');
+let isInitialized = false;
 
-// Hàm này sẽ được Google gọi sau khi người dùng đăng nhập thành công
+// Google callback function
 const handleGoogleLogin = async (response) => {
-  // response.credential chính là idToken mà backend cần
-  const idToken = response.credential;
+  if (!response || !response.credential) {
+    error.value = 'Không nhận được thông tin từ Google.';
+    return;
+  }
+
+  error.value = '';
+  
   try {
-    await authStore.handleGoogleLogin(idToken);
-    // Chuyển hướng đã được xử lý trong store
+    console.log('Đang xử lý Google login...');
+    await authStore.handleGoogleLogin(response.credential);
+    // Success - redirect will be handled by auth store
   } catch (err) {
-    console.error("Lỗi xử lý token Google:", err);
-    error.value = 'Xác thực với máy chủ thất bại. Vui lòng thử lại.';
+    console.error('Google login error:', err);
+    
+    // Improved error handling based on error type
+    if (err.response?.status === 500) {
+      // Backend internal server error - likely network/Google API issue
+      error.value = 'Lỗi máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
+    } else if (err.response?.status === 403) {
+      error.value = 'Không có quyền truy cập. Vui lòng liên hệ quản trị viên.';
+    } else if (err.response?.status === 400) {
+      error.value = 'Thông tin đăng nhập không hợp lệ.';
+    } else if (err.code === 'ERR_NETWORK' || !err.response) {
+      // Network error - can't reach backend
+      error.value = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    } else {
+      // Other errors
+      const serverMessage = err.response?.data?.message;
+      if (serverMessage && serverMessage.includes('UnknownHostException')) {
+        error.value = 'Không thể kết nối đến Google. Vui lòng kiểm tra kết nối mạng.';
+      } else {
+        error.value = serverMessage || 'Đăng nhập không thành công. Vui lòng thử lại.';
+      }
+    }
   }
 };
 
-// Sử dụng onMounted để đảm bảo mã chỉ chạy sau khi component đã được gắn vào DOM
-onMounted(() => {
-  // Đợi một chút để đảm bảo Google script đã load
-  const initializeGoogle = () => {
-    // Kiểm tra xem đối tượng 'google' đã tồn tại chưa (được tải từ script trong index.html)
-    if (typeof google === 'undefined') {
-      error.value = "Không thể tải thư viện Google. Vui lòng kiểm tra kết nối mạng.";
-      return;
-    }
+// Initialize Google Sign-In
+const initGoogleSignIn = () => {
+  if (typeof google === 'undefined' || isInitialized) {
+    return;
+  }
 
-    try {
-      // Khởi tạo Google Identity Services
-      google.accounts.id.initialize({
-        client_id: '739076687715-vb198kp2kvr6vfp3mmales9ufn292ckg.apps.googleusercontent.com', // Client ID của bạn
-        callback: handleGoogleLogin, // Hàm sẽ được gọi khi đăng nhập thành công
-      });
+  try {
+    google.accounts.id.initialize({
+      client_id: '739076687715-vb198kp2kvr6vfp3mmales9ufn292ckg.apps.googleusercontent.com',
+      callback: handleGoogleLogin
+    });
 
-      // Render nút đăng nhập của Google vào thẻ div có id="google-btn"
-      google.accounts.id.renderButton(
-        document.getElementById('google-btn'),
-        { 
-          theme: 'outline', 
-          size: 'large', 
-          width: '100%',
-          text: 'signin_with',
-          shape: 'rectangular'
-        }
-      );
-    } catch (err) {
-      console.error('Error initializing Google Sign-In:', err);
-      error.value = "Lỗi khởi tạo Google Sign-In. Vui lòng thử lại.";
+    google.accounts.id.renderButton(
+      document.getElementById('google-btn'),
+      {
+        theme: 'outline',
+        size: 'large',
+        width: 300,
+        text: 'signin_with',
+        shape: 'rectangular'
+      }
+    );
+
+    isInitialized = true;
+    console.log('Google Sign-In initialized successfully');
+  } catch (err) {
+    console.error('Failed to initialize Google Sign-In:', err);
+    error.value = 'Không thể khởi tạo Google Sign-In.';
+  }
+};
+
+// Wait for Google script to load
+const waitForGoogle = () => {
+  const maxAttempts = 30;
+  let attempts = 0;
+
+  const checkGoogle = () => {
+    attempts++;
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+      initGoogleSignIn();
+    } else if (attempts < maxAttempts) {
+      setTimeout(checkGoogle, 100);
+    } else {
+      error.value = 'Không thể tải Google Sign-In. Vui lòng refresh trang.';
     }
   };
 
-  // Thử khởi tạo ngay, nếu không được thì đợi thêm
-  if (typeof google !== 'undefined') {
-    initializeGoogle();
+  checkGoogle();
+};
+
+onMounted(() => {
+  // Try immediate initialization
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    initGoogleSignIn();
   } else {
-    // Đợi tối đa 5 giây cho Google script load
-    let attempts = 0;
-    const checkGoogle = setInterval(() => {
-      attempts++;
-      if (typeof google !== 'undefined') {
-        clearInterval(checkGoogle);
-        initializeGoogle();
-      } else if (attempts >= 50) { // 5 giây với mỗi 100ms
-        clearInterval(checkGoogle);
-        error.value = "Không thể tải thư viện Google. Vui lòng kiểm tra kết nối mạng.";
-      }
-    }, 100);
+    // Wait for script to load
+    waitForGoogle();
   }
+});
+
+onUnmounted(() => {
+  isInitialized = false;
 });
 </script>
 
@@ -92,13 +130,11 @@ onMounted(() => {
   justify-content: center;
 }
 
-/* Đảm bảo Google button responsive */
 .google-btn-wrapper > div {
   width: 100% !important;
   max-width: 330px;
 }
 
-/* Style cho error message */
 .alert {
   font-size: 0.875rem;
   padding: 0.5rem 0.75rem;
@@ -108,4 +144,3 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 </style>
-

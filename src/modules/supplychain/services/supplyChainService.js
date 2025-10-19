@@ -30,7 +30,13 @@ export const warehouseService = {
 // PURCHASE ORDER SERVICES - Quản lý đơn đặt hàng
 // ===================================================================
 export const purchaseOrderService = {
-  getAll: (params) => api.get('/api/v1/purchase-orders', { params }),
+  getAll(params = {}) {
+    console.log('🔍 Calling purchaseOrderService.getAll with params:', params);
+    
+    // Use the working endpoint based on console logs
+    console.log('🔍 Using working endpoint /api/v1/orders');
+    return api.get('/api/v1/orders');
+  },
   getById: (id) => api.get(`/api/v1/purchase-orders/${id}`),
   create: (data) => api.post('/api/v1/purchase-orders', data),
   update: (id, data) => api.put(`/api/v1/purchase-orders/${id}`, data),

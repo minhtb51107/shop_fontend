@@ -18,11 +18,24 @@ export const useAuthStore = defineStore('auth', {
     currentUser: (state) => state.user,
     isAdmin: (state) => {
       if (!state.user) return false;
-      // Handle both array and object formats
+      
+      // Check roles array
       const roles = state.user.roles;
       if (Array.isArray(roles)) {
         return roles.includes('ADMIN') || roles.some(role => role.name === 'ADMIN');
       }
+      
+      // Check roleNames (Set format from backend)
+      const roleNames = state.user.roleNames;
+      if (roleNames && typeof roleNames === 'object') {
+        if (roleNames.has && typeof roleNames.has === 'function') {
+          return roleNames.has('ADMIN');
+        }
+        if (Array.isArray(roleNames)) {
+          return roleNames.includes('ADMIN');
+        }
+      }
+      
       return false;
     },
     userRoles: (state) => {
@@ -82,7 +95,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('✅ Login successful, fetching user data...');
         await this.fetchCurrentUser();
         
-        // Handle redirect - check for query param or use returnUrl
+        // Handle redirect for login
         const currentRoute = router.currentRoute.value;
         const redirectPath = currentRoute.query.redirect || this.returnUrl || '/';
         
@@ -149,16 +162,39 @@ export const useAuthStore = defineStore('auth', {
 
     async handleGoogleLogin(googleToken) {
       try {
-        const response = await authService.loginWithGoogle(googleToken);
-        this.accessToken = response.data.accessToken;
-        this.refreshToken = response.data.refreshToken;
-        localStorage.setItem('accessToken', this.accessToken);
-        localStorage.setItem('refreshToken', this.refreshToken);
+        console.log('Processing Google login...');
+        
+        if (!googleToken) {
+          throw new Error('No Google token provided');
+        }
 
-        await this.fetchCurrentUser();
-        router.push(this.returnUrl || '/');
+        const response = await authService.loginWithGoogle(googleToken);
+        
+        if (response.data?.accessToken) {
+          // Store tokens
+          this.accessToken = response.data.accessToken;
+          this.refreshToken = response.data.refreshToken;
+          localStorage.setItem('accessToken', this.accessToken);
+          localStorage.setItem('refreshToken', this.refreshToken);
+
+          // Fetch user info and redirect
+          await this.fetchCurrentUser();
+          router.push(this.returnUrl || '/');
+        } else {
+          throw new Error('Invalid response from server');
+        }
       } catch (error) {
-        console.error("Google Login failed:", error);
+        console.error('Google Login failed:', error);
+        
+        // Log detailed error information for debugging backend issues
+        if (error.response?.status === 500) {
+          console.error('Backend 500 error details:', {
+            status: error.response.status,
+            data: error.response.data,
+            message: error.response.data?.message
+          });
+        }
+        
         throw error;
       }
     },
@@ -172,6 +208,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user');
       router.push('/auth/login');
     },
+
 
     // HÀM LÀM MỚI TOKEN
     async refreshAccessToken() {

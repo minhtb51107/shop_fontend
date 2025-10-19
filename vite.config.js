@@ -26,6 +26,10 @@ export default defineConfig({
         changeOrigin: true, // Cần thiết cho virtual hosted sites
         secure: false,      // Tắt kiểm tra SSL
       }
+    },
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
     }
   },
   // Performance optimization

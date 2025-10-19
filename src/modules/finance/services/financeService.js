@@ -9,12 +9,14 @@ export const accountService = {
     if (params.sort) queryParams.append('sort', params.sort);
     
     const url = `/api/v1/finance/accounts${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    console.log('🔍 Calling accountService.getAll with URL:', url);
     return api.get(url);
   },
   getById: (id) => api.get(`/api/v1/finance/accounts/${id}`),
   create: (data) => api.post('/api/v1/finance/accounts', data),
   update: (id, data) => api.put(`/api/v1/finance/accounts/${id}`, data),
   delete: (id) => api.delete(`/api/v1/finance/accounts/${id}`),
+  deactivate: (id) => api.patch(`/api/v1/finance/accounts/${id}/deactivate`),
 };
 
 export const journalEntryService = {

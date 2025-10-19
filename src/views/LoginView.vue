@@ -59,7 +59,7 @@
 import { ref, reactive } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import GoogleLoginButton from '@/components/GoogleLoginButton.vue'
+import GoogleLoginButton from '@/components/GoogleLoginButton.vue';
 
 const authStore = useAuthStore();
 

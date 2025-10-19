@@ -42,5 +42,23 @@ export default {
   refreshToken(refreshToken) {
     return api.post('/api/v1/auth/refresh-token', { refreshToken });
   },
+
+  // 2FA and email verification
+  sendVerificationCode(email) {
+    return api.post('/api/v1/auth/send-verification-code', { email });
+  },
+
+  verifyCode(email, code) {
+    return api.post('/api/v1/auth/verify-code', { email, code });
+  },
+
+  // Admin 2FA
+  sendAdminVerificationCode() {
+    return api.post('/api/v1/auth/admin/send-verification-code');
+  },
+
+  verifyAdminCode(code) {
+    return api.post('/api/v1/auth/admin/verify-code', { code });
+  },
 };
 

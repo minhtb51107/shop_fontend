@@ -76,25 +76,8 @@ api.interceptors.response.use(
         // 403: User is authenticated but lacks permissions - don't logout, just show error
         console.log('🚫 Access denied (403) - user lacks permissions for this resource');
         
-        // Check if it's an API endpoint that might need token refresh first
-        if (!isRefreshTokenRequest && !isLoginRequest) {
-          // Try token refresh once for 403, in case token is valid but expired
-          if (!originalRequest._retry && authStore.refreshToken) {
-            originalRequest._retry = true;
-            try {
-              const newAccessToken = await authStore.refreshAccessToken();
-              if (newAccessToken) {
-                originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
-                return api(originalRequest);
-              }
-            } catch (refreshError) {
-              console.log('🔄 Token refresh failed for 403, treating as permission error');
-              // Fall through to return the original 403 error
-            }
-          }
-        }
-        
-        // Return the 403 error without logging out - let the component handle it
+        // For 403 errors, don't try to refresh token - it's a permission issue
+        // Just return the error so the component can handle it properly
         return Promise.reject(error);
       }
     }

@@ -100,6 +100,19 @@
       <p class="mt-3 text-muted">Đang tải dữ liệu...</p>
     </div>
 
+    <!-- Error State -->
+    <div v-else-if="error" class="text-center py-5">
+      <div class="alert alert-danger mx-auto" style="max-width: 500px;">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>{{ error }}</strong>
+        <div class="mt-3">
+          <button class="btn btn-outline-danger btn-sm" @click="fetchOrders">
+            <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Orders List -->
     <div v-else class="orders-container">
       <transition-group name="list-fade" tag="div">
@@ -172,10 +185,35 @@
       </transition-group>
 
       <!-- Empty State -->
-      <div v-if="filteredOrders.length === 0" class="text-center py-5">
+      <div v-if="filteredOrders.length === 0 && !error" class="text-center py-5">
         <i class="bi bi-inbox display-1 text-muted mb-3"></i>
         <h4>Không tìm thấy đơn mua hàng</h4>
         <p class="text-muted">{{ filters.search || filters.status ? 'Thử thay đổi bộ lọc' : 'Bắt đầu bằng cách tạo đơn mới' }}</p>
+        <div class="mt-3">
+          <button class="btn btn-outline-primary" @click="fetchOrders">
+            <i class="bi bi-arrow-clockwise me-1"></i>Tải lại
+          </button>
+        </div>
+      </div>
+      
+      <!-- Server Issue Warning -->
+      <div v-if="filteredOrders.length === 0 && !error && !loading && hasServerIssue" class="text-center py-5">
+        <div class="alert alert-warning mx-auto" style="max-width: 700px;">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Tạm thời không thể tải dữ liệu</strong>
+          <p class="mb-3 mt-2">
+            Máy chủ đang gặp sự cố kỹ thuật. Bạn vẫn có thể tạo đơn mua hàng mới bằng nút 
+            <strong>"+ Tạo đơn mới"</strong> ở trên.
+          </p>
+          <div class="mt-3">
+            <button class="btn btn-warning btn-sm me-2" @click="fetchOrders">
+              <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+            </button>
+            <router-link :to="{ name: 'purchase-order-create' }" class="btn btn-primary btn-sm">
+              <i class="bi bi-plus-circle me-1"></i>Tạo đơn mới
+            </router-link>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -205,11 +243,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { purchaseOrderService } from '../services/supplyChainService';
+import { useAuthStore } from '@/stores/auth';
 
 const purchaseOrders = ref([]);
 const loading = ref(false);
+const error = ref(null);
 const currentPage = ref(1);
 const totalPages = ref(1);
+const hasServerIssue = ref(false);
 
 const filters = ref({
   search: '',
@@ -221,42 +262,62 @@ onMounted(async () => {
   await fetchOrders();
 });
 
-const fetchOrders = async () => {
-  loading.value = true;
-  try {
-    // Try without sort first to avoid 500 error, then add sort if backend supports it
-    const params = { 
-      page: currentPage.value - 1, 
-      size: 20
-    };
-    // Add sort only if we're sure the field exists in backend
-    // params.sort = 'orderDate,desc';
-    
-    const response = await purchaseOrderService.getAll(params);
-    
-    // Handle both Page<> and List<> response formats
-    if (response.data && typeof response.data === 'object') {
-      if (Array.isArray(response.data.content)) {
-        // Spring Page format
-        purchaseOrders.value = response.data.content;
-        totalPages.value = response.data.totalPages || 1;
-      } else if (Array.isArray(response.data)) {
-        // Direct List format
-        purchaseOrders.value = response.data;
-        totalPages.value = 1;
-      } else {
-        purchaseOrders.value = [];
-        totalPages.value = 1;
-      }
+// Helper function to process API response
+const processResponse = (response) => {
+  if (response && response.data) {
+    if (Array.isArray(response.data.content)) {
+      // Spring Page format
+      purchaseOrders.value = response.data.content || [];
+      totalPages.value = response.data.totalPages || 1;
+      console.log(`✅ Loaded ${purchaseOrders.value.length} purchase orders (Page format)`);
+    } else if (Array.isArray(response.data)) {
+      // Direct List format
+      purchaseOrders.value = response.data || [];
+      totalPages.value = 1;
+      console.log(`✅ Loaded ${purchaseOrders.value.length} purchase orders (List format)`);
     } else {
       purchaseOrders.value = [];
       totalPages.value = 1;
+      console.warn('⚠️ Unexpected response format:', response.data);
     }
-  } catch (error) {
-    console.error('Error loading purchase orders:', error);
+  } else {
     purchaseOrders.value = [];
     totalPages.value = 1;
-    // Don't show alert for now, just log error - might be permission issue
+    console.warn('⚠️ No data in response');
+  }
+};
+
+const fetchOrders = async () => {
+  loading.value = true;
+  error.value = null;
+  hasServerIssue.value = false;
+  
+  try {
+    console.log('🔍 Fetching purchase orders...');
+    
+    // Direct call to working endpoint
+    const response = await purchaseOrderService.getAll();
+    processResponse(response);
+    
+  } catch (err) {
+    console.error('❌ Error loading purchase orders:', err);
+    
+    // Set empty state
+    purchaseOrders.value = [];
+    totalPages.value = 1;
+    
+    // Handle error based on status
+    if (err.response?.status === 500) {
+      console.warn('🔧 Server 500 error');
+      hasServerIssue.value = true;
+      error.value = null; // Show warning banner instead
+    } else if (err.response?.status === 403) {
+      error.value = 'Không có quyền truy cập. Vui lòng liên hệ quản trị viên.';
+    } else if (err.response?.status === 401) {
+      error.value = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+    } else {
+      error.value = 'Không thể tải dữ liệu. Vui lòng thử lại.';
+    }
   } finally {
     loading.value = false;
   }
