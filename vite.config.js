@@ -14,7 +14,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+    },
+    dedupe: ['vue', 'vue-router', 'pinia']
   },
   // *** THÊM CẤU HÌNH PROXY DƯỚI ĐÂY ***
   server: {
@@ -26,5 +27,41 @@ export default defineConfig({
         secure: false,      // Tắt kiểm tra SSL
       }
     }
+  },
+  // Performance optimization
+  build: {
+    target: 'es2015',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          ui: ['bootstrap', 'bootstrap-icons'],
+          utils: ['axios', 'vue3-google-oauth2']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      'axios',
+      'bootstrap'
+    ],
+    exclude: ['bootstrap-icons']
+  },
+  // CSS optimization
+  css: {
+    devSourcemap: true,
   }
 })

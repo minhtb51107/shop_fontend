@@ -1,75 +1,178 @@
 <template>
-  <div>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4 class="mb-0">Quản lý Biến thể</h4>
-      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#variantModal" @click="openModal()">
-        <i class="bi bi-plus-lg me-2"></i>Thêm biến thể
-      </button>
+  <!-- Modal -->
+  <div v-if="product" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-diagram-3 me-2"></i>
+            Quản lý biến thể - {{ product.name }}
+          </h5>
+          <button type="button" class="btn-close" @click="$emit('close')"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Product Info -->
+          <div class="alert alert-info mb-3">
+            <strong>Sản phẩm:</strong> {{ product.name }} | 
+            <strong>SKU:</strong> {{ product.skuPrefix }} | 
+            <strong>Danh mục:</strong> {{ product.category?.name }}
+          </div>
+
+          <!-- Header Actions -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Danh sách biến thể sản phẩm</h6>
+            <button class="btn btn-primary btn-sm" @click="openAddModal()">
+              <i class="bi bi-plus-lg me-2"></i>Thêm biến thể
+            </button>
+          </div>
+
+          <!-- Variants Table -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>SKU</th>
+                  <th>Màu sắc</th>
+                  <th>Giá bán</th>
+                  <th>Tồn kho</th>
+                  <th class="text-end">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="loading">
+                  <td colspan="6" class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else-if="variants.length === 0">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-box-seam display-6 text-muted"></i>
+                    <div class="mt-2">Chưa có biến thể nào</div>
+                    <button class="btn btn-sm btn-outline-primary mt-2" @click="openAddModal()">
+                      <i class="bi bi-plus-lg me-1"></i>Thêm biến thể đầu tiên
+                    </button>
+                  </td>
+                </tr>
+                <tr v-for="variant in variants" :key="variant.id">
+                  <td>
+                    <span class="badge bg-light text-dark">{{ variant.id }}</span>
+                  </td>
+                  <td>
+                    <code class="fw-bold">{{ variant.sku }}</code>
+                  </td>
+                  <td>
+                    <span v-if="variant.color" class="badge bg-secondary">
+                      {{ variant.color }}
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                  </td>
+                  <td>
+                    <strong class="text-success">{{ formatCurrency(variant.price) }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge bg-info">{{ getTotalStock(variant.id) || 0 }} sản phẩm</span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group" role="group">
+                      <button 
+                        class="btn btn-sm btn-outline-secondary" 
+                        title="Chỉnh sửa"
+                        @click="openEditModal(variant)"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button 
+                        class="btn btn-sm btn-outline-danger" 
+                        title="Xóa"
+                        @click="confirmDelete(variant)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="$emit('close')">
+            <i class="bi bi-x-lg me-2"></i>Đóng
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <p>Thêm hoặc chỉnh sửa các phiên bản sản phẩm (ví dụ: theo màu sắc, giá tiền...).</p>
-
-    <table class="table table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>SKU</th>
-          <th>Màu sắc</th>
-          <th>Giá bán</th>
-          <th class="text-end">Hành động</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="loading">
-          <td colspan="4" class="text-center">
-            <div class="spinner-border spinner-border-sm"></div>
-          </td>
-        </tr>
-        <tr v-else-if="variants.length === 0">
-            <td colspan="4" class="text-center text-muted">Chưa có biến thể nào.</td>
-        </tr>
-        <tr v-for="variant in variants" :key="variant.id">
-          <td class="fw-bold">{{ variant.sku }}</td>
-          <td>{{ variant.color || 'N/A' }}</td>
-          <td>{{ formatCurrency(variant.price) }}</td>
-          <td class="text-end">
-            <button class="btn btn-sm btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#variantModal" @click="openModal(variant)">
-              <i class="bi bi-pencil-square"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" @click="handleDelete(variant)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="modal fade" id="variantModal" tabindex="-1" ref="modalRef">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ isEditMode ? 'Chỉnh sửa Biến thể' : 'Thêm biến thể mới' }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="handleSubmit">
-              <div class="mb-3">
-                <label class="form-label">SKU (Mã định danh sản phẩm)</label>
-                <input v-model="form.sku" type="text" class="form-control" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Màu sắc</label>
-                <input v-model="form.color" type="text" class="form-control">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Giá bán</label>
-                <input v-model.number="form.price" type="number" class="form-control" required>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-            <button type="button" class="btn btn-primary" @click="handleSubmit">Lưu</button>
-          </div>
+  <!-- Add/Edit Variant Modal -->
+  <div v-if="showVariantForm" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            {{ isEditMode ? 'Chỉnh sửa biến thể' : 'Thêm biến thể mới' }}
+          </h5>
+          <button type="button" class="btn-close" @click="closeVariantForm"></button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="handleSubmit">
+            <div class="mb-3">
+              <label class="form-label">SKU <span class="text-danger">*</span></label>
+              <input 
+                v-model="form.sku" 
+                type="text" 
+                class="form-control" 
+                :class="{ 'is-invalid': errors.sku }"
+                placeholder="VD: IPHONE15-RED-128GB"
+                required
+              >
+              <div v-if="errors.sku" class="invalid-feedback">{{ errors.sku }}</div>
+              <div class="form-text">Mã định danh duy nhất cho biến thể này</div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Màu sắc</label>
+              <input 
+                v-model="form.color" 
+                type="text" 
+                class="form-control"
+                placeholder="VD: Đỏ, Xanh, Vàng, Bạc..."
+              >
+              <div class="form-text">Màu sắc hoặc đặc điểm phân biệt</div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Giá bán (VND) <span class="text-danger">*</span></label>
+              <input 
+                v-model.number="form.price" 
+                type="number" 
+                class="form-control" 
+                :class="{ 'is-invalid': errors.price }"
+                min="0"
+                step="1000"
+                required
+              >
+              <div v-if="errors.price" class="invalid-feedback">{{ errors.price }}</div>
+              <div class="form-text">Giá bán cho khách hàng cuối</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeVariantForm">
+            Hủy
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            :disabled="submitting"
+            @click="handleSubmit"
+          >
+            <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            {{ isEditMode ? 'Cập nhật' : 'Thêm biến thể' }}
+          </button>
         </div>
       </div>
     </div>
@@ -77,82 +180,191 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { productService } from '../services/productService';
-import { Modal } from 'bootstrap';
+import { inventoryService } from '../../supplychain/services/supplyChainService';
 
 const props = defineProps({
-  productId: {
-    type: [String, Number],
+  product: {
+    type: Object,
     required: true
   }
 });
 
-let modalInstance = null;
-const modalRef = ref(null);
+const emit = defineEmits(['close', 'updated']);
 
+// State
 const variants = ref([]);
 const loading = ref(false);
-const form = ref({});
+const showVariantForm = ref(false);
 const isEditMode = ref(false);
+const submitting = ref(false);
+const errors = ref({});
 
-onMounted(() => {
-    fetchVariants();
-    modalInstance = new Modal(modalRef.value);
+// Form data
+const form = ref({
+  id: null,
+  sku: '',
+  color: '',
+  price: 0
 });
 
+// Stock data
+const inventory = ref({});
+
+// Methods
 const fetchVariants = async () => {
-    loading.value = true;
-    try {
-        const response = await productService.getVariantsForProduct(props.productId);
-        variants.value = response.data;
-    } catch (error) {
-        console.error("Lỗi tải danh sách biến thể:", error);
-        alert('Không thể tải danh sách biến thể.');
-    } finally {
-        loading.value = false;
-    }
+  if (!props.product?.id) return;
+  
+  loading.value = true;
+  try {
+    const response = await productService.getVariantsForProduct(props.product.id);
+    variants.value = response.data || [];
+    
+    // Load inventory data for all variants
+    await loadInventoryData();
+  } catch (error) {
+    console.error("Failed to fetch variants:", error);
+  } finally {
+    loading.value = false;
+  }
 };
 
-const openModal = (variant = null) => {
-    if (variant) {
-        isEditMode.value = true;
-        form.value = { ...variant };
-    } else {
-        isEditMode.value = false;
-        form.value = { sku: '', color: '', price: 0 };
-    }
+const openAddModal = () => {
+  isEditMode.value = false;
+  form.value = {
+    id: null,
+    sku: '',
+    color: '',
+    price: 0
+  };
+  errors.value = {};
+  showVariantForm.value = true;
+};
+
+const openEditModal = (variant) => {
+  isEditMode.value = true;
+  form.value = {
+    id: variant.id,
+    sku: variant.sku,
+    color: variant.color || '',
+    price: variant.price
+  };
+  errors.value = {};
+  showVariantForm.value = true;
+};
+
+const closeVariantForm = () => {
+  showVariantForm.value = false;
+  errors.value = {};
 };
 
 const handleSubmit = async () => {
-    try {
-        if (isEditMode.value) {
-            await productService.updateVariant(form.value.id, form.value);
-        } else {
-            await productService.createVariant(props.productId, form.value);
-        }
-        fetchVariants();
-        modalInstance.hide();
-    } catch (error) {
-        console.error("Lưu biến thể thất bại:", error);
-        alert('Lưu thất bại! SKU có thể đã tồn tại.');
+  submitting.value = true;
+  errors.value = {};
+
+  try {
+    // Validation
+    if (!form.value.sku.trim()) {
+      errors.value.sku = 'SKU không được để trống';
     }
+    if (!form.value.price || form.value.price <= 0) {
+      errors.value.price = 'Giá phải lớn hơn 0';
+    }
+
+    if (Object.keys(errors.value).length > 0) {
+      submitting.value = false;
+      return;
+    }
+
+    if (isEditMode.value) {
+      await productService.updateVariant(form.value.id, {
+        sku: form.value.sku,
+        color: form.value.color,
+        price: form.value.price
+      });
+    } else {
+      await productService.createVariant(props.product.id, {
+        sku: form.value.sku,
+        color: form.value.color,
+        price: form.value.price
+      });
+    }
+
+    closeVariantForm();
+    await fetchVariants();
+    emit('updated');
+  } catch (error) {
+    console.error('Failed to save variant:', error);
+    if (error.response?.data?.message) {
+      errors.value.sku = error.response.data.message;
+    } else {
+      errors.value.sku = 'Lưu thất bại! SKU có thể đã tồn tại.';
+    }
+  } finally {
+    submitting.value = false;
+  }
 };
 
-const handleDelete = async (variant) => {
-    if(confirm(`Bạn có chắc muốn xóa biến thể với SKU "${variant.sku}"?`)) {
-        try {
-            await productService.deleteVariant(variant.id);
-            fetchVariants();
-        } catch (error) {
-            console.error("Xóa biến thể thất bại:", error);
-            alert('Xóa thất bại!');
-        }
+const confirmDelete = async (variant) => {
+  if (confirm(`Bạn có chắc muốn xóa biến thể "${variant.sku}"?\n\nHành động này không thể hoàn tác.`)) {
+    try {
+      await productService.deleteVariant(variant.id);
+      await fetchVariants();
+      emit('updated');
+    } catch (error) {
+      console.error('Failed to delete variant:', error);
+      alert('Xóa thất bại! Biến thể có thể đang được sử dụng trong đơn hàng.');
     }
+  }
+};
+
+// Load inventory data for all variants
+const loadInventoryData = async () => {
+  if (!variants.value.length) return;
+  
+  try {
+    for (const variant of variants.value) {
+      const response = await inventoryService.getAll({ variantId: variant.id });
+      let totalStock = 0;
+      
+      if (response.data && Array.isArray(response.data.content)) {
+        totalStock = response.data.content.reduce((total, item) => total + (item.quantityOnHand || 0), 0);
+      } else if (Array.isArray(response.data)) {
+        totalStock = response.data.reduce((total, item) => total + (item.quantityOnHand || 0), 0);
+      }
+      
+      inventory.value[variant.id] = totalStock;
+    }
+  } catch (error) {
+    console.warn('Failed to load inventory data:', error);
+  }
+};
+
+const getTotalStock = (variantId) => {
+  return inventory.value[variantId] || 0;
 };
 
 const formatCurrency = (value) => {
   if (!value) return '0 ₫';
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+  return new Intl.NumberFormat('vi-VN', { 
+    style: 'currency', 
+    currency: 'VND',
+    minimumFractionDigits: 0
+  }).format(value);
 };
+
+// Watch for product changes
+watch(() => props.product, (newProduct) => {
+  if (newProduct) {
+    fetchVariants();
+  }
+}, { immediate: true });
+
+// Lifecycle
+onMounted(() => {
+  if (props.product) {
+    fetchVariants();
+  }
+});
 </script>

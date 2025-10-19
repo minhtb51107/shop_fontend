@@ -1,60 +1,72 @@
 <template>
-  <div class="card shadow-sm" style="width: 400px;">
-    <div class="card-body p-5">
-      <h3 class="card-title text-center mb-4">Đặt lại mật khẩu</h3>
-      <div v-if="successMessage" class="alert alert-success">
-        {{ successMessage }}
-        <router-link :to="{ name: 'login' }" class="alert-link"> Quay lại trang đăng nhập.</router-link>
+  <div v-if="!isSuccess">
+    <h2 class="text-center mb-4">Đặt lại mật khẩu mới</h2>
+
+    <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <form @submit.prevent="performReset">
+      <div class="mb-3">
+        <label for="password" class="form-label">Mật khẩu mới</label>
+        <input type="password" class="form-control" id="password" v-model="form.newPassword" required minlength="8" />
       </div>
-      <form v-else @submit.prevent="handleResetPassword">
-        <div class="mb-3">
-          <label class="form-label">Mật khẩu mới</label>
-          <input type="password" class="form-control" v-model="form.newPassword" required>
-        </div>
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-        <button type="submit" class="btn btn-primary w-100" :disabled="loading">
-          <span v-if="loading" class="spinner-border spinner-border-sm"></span>
-          <span v-else>Lưu mật khẩu mới</span>
+      <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới</label>
+        <input type="password" class="form-control" id="confirmPassword" v-model="confirmPassword" required />
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary" :disabled="isLoading">
+          <span v-if="isLoading" class="spinner-border spinner-border-sm"></span>
+          <span v-else>Lưu mật khẩu</span>
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
+  </div>
+  <div v-else class="text-center">
+    <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+    <h3 class="mt-3">Thành công!</h3>
+    <p class="text-muted">Mật khẩu của bạn đã được đặt lại. Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.</p>
+    <RouterLink to="/auth/login" class="btn btn-primary mt-2">Đến trang đăng nhập</RouterLink>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, reactive, onMounted } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
 
-const form = ref({
+const form = reactive({
   token: '',
-  newPassword: ''
+  newPassword: '',
 });
-const error = ref('');
-const successMessage = ref('');
-const loading = ref(false);
+const confirmPassword = ref('');
+const isLoading = ref(false);
+const errorMessage = ref('');
+const isSuccess = ref(false);
 
 onMounted(() => {
-  // Lấy token từ URL query parameter
-  form.value.token = route.query.token;
-  if (!form.value.token) {
-    error.value = 'Đường dẫn không hợp lệ. Vui lòng thử lại từ email của bạn.';
+  form.token = route.query.token;
+  if (!form.token) {
+    errorMessage.value = "Token không hợp lệ hoặc đã hết hạn.";
   }
 });
 
-const handleResetPassword = async () => {
-  loading.value = true;
-  error.value = '';
+const performReset = async () => {
+  if (form.newPassword !== confirmPassword.value) {
+    errorMessage.value = "Mật khẩu xác nhận không khớp.";
+    return;
+  }
+  isLoading.value = true;
+  errorMessage.value = '';
   try {
-    await authStore.resetPassword(form.value);
-    successMessage.value = 'Mật khẩu của bạn đã được đặt lại thành công!';
-  } catch (err) {
-    error.value = err.response?.data?.message || 'Token không hợp lệ hoặc đã hết hạn.';
+    await authStore.handleResetPassword(form);
+    isSuccess.value = true;
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.';
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 </script>

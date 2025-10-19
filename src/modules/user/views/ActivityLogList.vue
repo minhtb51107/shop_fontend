@@ -43,7 +43,7 @@
           </thead>
           <tbody>
             <tr v-if="loading"><td colspan="4" class="text-center p-5"><div class="spinner-border"></div></td></tr>
-            <tr v-else-if="logs.length === 0"><td colspan="4" class="text-center text-muted p-5">Không tìm thấy kết quả.</td></tr>
+            <tr v-else-if="!logs || logs.length === 0"><td colspan="4" class="text-center text-muted p-5">Không tìm thấy kết quả.</td></tr>
             <tr v-for="log in logs" :key="log.id">
               <td>{{ formatDateTime(log.createdAt) }}</td>
               <td>{{ log.userEmail }}</td>
@@ -87,10 +87,12 @@ async function fetchLogs() {
         size: filters.value.size
     };
     const response = await activityLogService.search(params);
-    logs.value = response.data.content;
+    logs.value = response.data?.content || response.data || [];
     // pagination info is in response.data (totalPages, totalElements, etc.)
   } catch (error) {
-    alert('Không thể tải lịch sử hoạt động.');
+    console.error('Error loading activity logs:', error);
+    logs.value = [];
+    // Don't show alert for now - might be permission issue
   } finally {
     loading.value = false;
   }

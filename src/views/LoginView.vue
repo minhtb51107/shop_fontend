@@ -1,83 +1,114 @@
 <template>
-  <div class="card shadow-sm" style="width: 400px;">
-    <div class="card-body p-5">
-      <h3 class="card-title text-center mb-4">
-        <i class="bi bi-shop me-2"></i>Đăng nhập
-      </h3>
-      <form @submit.prevent="handleLogin">
-        <div class="mb-3">
-          <label for="email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="email" v-model="email" required>
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">Mật khẩu</label>
-          <input type="password" class="form-control" id="password" v-model="password" required>
-        </div>
-        <div class="d-flex justify-content-end mb-3">
-            <router-link :to="{ name: 'forgot-password' }" class="small">Quên mật khẩu?</router-link>
-        </div>
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-        <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="loading">
-          <span v-if="loading" class="spinner-border spinner-border-sm"></span>
-          <span v-else>Đăng nhập</span>
-        </button>
-      </form>
+  <h2 class="text-center mb-4">Đăng nhập</h2>
 
-      <div class="divider text-center my-3"><span>HOẶC</span></div>
+  <div v-if="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
 
-      <button @click="handleGoogleLogin" class="btn btn-light border w-100">
-        <img src="https://img.icons8.com/color/16/000000/google-logo.png" class="me-2"/> Đăng nhập với Google
-      </button>
-
-      <div class="text-center mt-4">
-        <small>Chưa có tài khoản? <router-link :to="{ name: 'register' }">Tạo tài khoản mới</router-link></small>
-      </div>
+  <form @submit.prevent="handleLogin">
+    <div class="mb-3">
+      <label for="email" class="form-label">Email</label>
+      <input
+        type="email"
+        class="form-control"
+        id="email"
+        v-model="form.email"
+        required
+        placeholder="nhapdiachi@email.com"
+      />
     </div>
+    <div class="mb-3">
+      <label for="password" class="form-label">Mật khẩu</label>
+      <input
+        type="password"
+        class="form-control"
+        id="password"
+        v-model="form.password"
+        required
+        placeholder="••••••••"
+      />
+    </div>
+    <div class="d-grid mb-3">
+      <button type="submit" class="btn btn-primary" :disabled="isLoading">
+        <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span v-else>Đăng nhập</span>
+      </button>
+    </div>
+  </form>
+
+  <div class="d-flex align-items-center mb-3">
+    <hr class="flex-grow-1">
+    <span class="px-3 text-muted">HOẶC</span>
+    <hr class="flex-grow-1">
+  </div>
+
+  <div class="d-grid">
+    <GoogleLoginButton />
+  </div>
+
+  <div class="text-center mt-3">
+    <p>
+      Chưa có tài khoản?
+      <RouterLink to="/auth/register">Đăng ký ngay</RouterLink>
+    </p>
+    <RouterLink to="/auth/forgot-password">Quên mật khẩu?</RouterLink>
   </div>
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'; // inject
+import { ref, reactive } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import GoogleLoginButton from '@/components/GoogleLoginButton.vue'
 
-const email = ref('admin@shop.com');
-const password = ref('admin123');
-const error = ref('');
-const loading = ref(false);
 const authStore = useAuthStore();
 
-// Inject GAuth
-const Vue3GoogleOauth = inject('Vue3GoogleOauth');
+const form = reactive({
+  email: '',
+  password: '',
+});
+
+const isLoading = ref(false);
+const errorMessage = ref('');
 
 const handleLogin = async () => {
-  loading.value = true;
-  error.value = '';
+  isLoading.value = true;
+  errorMessage.value = '';
   try {
-    await authStore.login({ email: email.value, password: password.value });
-  } catch (err) {
-    error.value = 'Email hoặc mật khẩu không chính xác.';
+    await authStore.login(form);
+  } catch (error) {
+    console.error('Login error details:', error.response);
+    
+    // Xử lý các loại lỗi cụ thể
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message;
+      
+      if (status === 401) {
+        // Có thể là: sai password, chưa activate, hoặc email không tồn tại
+        if (message) {
+          errorMessage.value = message;
+        } else {
+          errorMessage.value = 'Email hoặc mật khẩu không chính xác. Nếu bạn vừa đăng ký, vui lòng kiểm tra email để kích hoạt tài khoản.';
+        }
+      } else if (status === 403) {
+        errorMessage.value = message || 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để kích hoạt.';
+      } else {
+        errorMessage.value = message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+      }
+    } else if (error.request) {
+      errorMessage.value = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    } else {
+      errorMessage.value = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+    }
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
-
-const handleGoogleLogin = async () => {
-    try {
-        const googleUser = await Vue3GoogleOauth.instance.signIn();
-        const idToken = googleUser.getAuthResponse().id_token;
-        await authStore.loginWithGoogle(idToken);
-    } catch (error) {
-        console.error("Google Sign-In error", error);
-        error.value = "Đăng nhập với Google thất bại.";
-    }
-};
 </script>
+
 <style scoped>
-.divider { display: flex; align-items: center; }
-.divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #dee2e6;
+hr {
+  color: #adb5bd;
 }
-.divider span { padding: 0 1rem; }
 </style>

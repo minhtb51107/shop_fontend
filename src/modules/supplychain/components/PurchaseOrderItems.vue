@@ -116,15 +116,32 @@ onMounted(async () => {
 const fetchAllProductsAndVariants = async () => {
     try {
         const productRes = await productService.getAll();
-        const products = productRes.data;
-        const variantPromises = products.map(p => productService.getVariantsForProduct(p.id));
+        const products = Array.isArray(productRes.data) ? productRes.data : [];
+        
+        if (products.length === 0) {
+            productList.value = [];
+            return;
+        }
+        
+        const variantPromises = products.map(async (p) => {
+            try {
+                const variantRes = await productService.getVariantsForProduct(p.id);
+                return Array.isArray(variantRes.data) ? variantRes.data : [];
+            } catch (err) {
+                console.warn(`Failed to load variants for product ${p.id}:`, err);
+                return [];
+            }
+        });
+        
         const variantResponses = await Promise.all(variantPromises);
         products.forEach((p, index) => {
-            p.variants = variantResponses[index].data;
+            p.variants = variantResponses[index] || [];
         });
+        
         productList.value = products.filter(p => p.variants && p.variants.length > 0);
     } catch (error) {
         console.error("Lỗi tải danh sách sản phẩm/biến thể: ", error);
+        productList.value = [];
     }
 };
 

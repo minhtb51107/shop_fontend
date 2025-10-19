@@ -1,45 +1,59 @@
 // src/modules/product/services/productService.js
-import axios from 'axios';
 import api from '@/services/api';
 
-// API base path is /api for product, brand, category based on your backend controllers
-const apiProduct = axios.create({
-  baseURL: 'http://localhost:8080/api',
-});
-
-// Use interceptor to add token to this instance as well
-apiProduct.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Base paths based on backend controllers
+const BASE_URL = '/api/v1';
 
 export const brandService = {
-  getAll: () => apiProduct.get('/brands'),
-  create: (data) => apiProduct.post('/brands', data),
-  update: (id, data) => apiProduct.put(`/brands/${id}`, data),
-  delete: (id) => apiProduct.delete(`/brands/${id}`),
+  getAll: () => api.get(`${BASE_URL}/brands`),
+  getById: (id) => api.get(`${BASE_URL}/brands/${id}`),
+  create: (data) => api.post(`${BASE_URL}/brands`, data),
+  update: (id, data) => api.put(`${BASE_URL}/brands/${id}`, data),
+  delete: (id) => api.delete(`${BASE_URL}/brands/${id}`),
 };
 
 export const categoryService = {
-  getAll: () => apiProduct.get('/categories'),
-  create: (data) => apiProduct.post('/categories', data),
-  update: (id, data) => apiProduct.put(`/categories/${id}`, data),
-  delete: (id) => apiProduct.delete(`/categories/${id}`),
+  getAll: () => api.get(`${BASE_URL}/categories`),
+  getById: (id) => api.get(`${BASE_URL}/categories/${id}`),
+  create: (data) => api.post(`${BASE_URL}/categories`, data),
+  update: (id, data) => api.put(`${BASE_URL}/categories/${id}`, data),
+  delete: (id) => api.delete(`${BASE_URL}/categories/${id}`),
 };
 
 export const productService = {
-  getAll: () => apiProduct.get('/products'),
-  getById: (id) => apiProduct.get(`/products/${id}`),
-  create: (data) => apiProduct.post('/products', data),
-  update: (id, data) => apiProduct.put(`/products/${id}`, data),
-  delete: (id) => apiProduct.delete(`/products/${id}`),
+  // Basic CRUD
+  getAll: (queryParams = '') => api.get(`${BASE_URL}/products${queryParams}`),
+  getById: (id) => api.get(`${BASE_URL}/products/${id}`),
+  create: (data) => api.post(`${BASE_URL}/products`, data),
+  update: (id, data) => api.put(`${BASE_URL}/products/${id}`, data),
+  delete: (id) => api.delete(`${BASE_URL}/products/${id}`),
   
   // Variants
-  getVariantsForProduct: (productId) => apiProduct.get(`/products/${productId}/variants`),
-  createVariant: (productId, data) => apiProduct.post(`/products/${productId}/variants`, data),
-  updateVariant: (variantId, data) => apiProduct.put(`/variants/${variantId}`, data),
-  deleteVariant: (variantId) => apiProduct.delete(`/variants/${variantId}`),
+  getVariantsForProduct: (productId) => api.get(`${BASE_URL}/products/${productId}/variants`),
+  createVariant: (productId, data) => api.post(`${BASE_URL}/products/${productId}/variants`, data),
+  updateVariant: (variantId, data) => api.put(`${BASE_URL}/variants/${variantId}`, data),
+  deleteVariant: (variantId) => api.delete(`${BASE_URL}/variants/${variantId}`),
+  
+  // Inventory (if available)
+  getInventory: (variantId) => api.get(`${BASE_URL}/inventory/variant/${variantId}`),
+  getInventoryForProduct: (productId) => api.get(`${BASE_URL}/products/${productId}/inventory`),
+  
+  // Product images
+  getImages: (productId) => api.get(`${BASE_URL}/products/${productId}/images`),
+  uploadImage: (productId, formData) => api.post(`${BASE_URL}/products/${productId}/images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteImage: (imageId) => api.delete(`${BASE_URL}/images/${imageId}`),
+  
+  // Search & filters
+  search: (query, filters = {}) => {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params.append(key, value);
+      }
+    });
+    return api.get(`${BASE_URL}/products/search?${params.toString()}`);
+  },
 };
