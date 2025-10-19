@@ -37,18 +37,10 @@
               <v-divider class="my-4">Hoặc đăng nhập với</v-divider>
                <v-row dense>
                  <v-col>
-                   <GoogleSignInButton
-                        @success="handleGoogleSignInSuccess"
-                        @error="handleGoogleSignInError"
-                        :theme="'outline'"
-                        :size="'large'"
-                        :text="'signin_with'"
-                        :shape="'rectangular'"
-                        :logo-alignment="'left'"
-                        :width="'100%'"
-                    ></GoogleSignInButton>
-                    </v-col>
-                  </v-row>
+                   <!-- === THAY THẾ COMPONENT TẠI ĐÂY === -->
+                   <GoogleLoginButton />
+                 </v-col>
+                </v-row>
                </v-form>
           </v-card-text>
            <v-card-actions class="justify-center mt-4">
@@ -78,14 +70,15 @@ import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 // --- GOOGLE LOGIN IMPORTS ---
-import { GoogleSignInButton, decodeCredential } from "vue3-google-signin"; // , googleOneTap // Nếu muốn dùng One Tap
+// THÊM IMPORT MỚI
+import GoogleLoginButton from '@/components/GoogleLoginButton.vue';
 // --- END GOOGLE LOGIN IMPORTS ---
 
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false); // Loading cho đăng nhập thường
-const googleLoading = ref(false); // Loading cho đăng nhập Google
+// const googleLoading = ref(false); // State này giờ nằm trong component GoogleLoginButton
 const errorMessage = ref('');
 const loginForm = ref(null);
 const snackbar = ref({ show: false, text: '', color: 'error', timeout: 3000 });
@@ -123,72 +116,8 @@ const handleLogin = async () => {
   }
 };
 
-// --- GOOGLE LOGIN HANDLERS ---
-// Xử lý callback khi đăng nhập Google thành công
-const handleGoogleSignInSuccess = async (response) => {
-  googleLoading.value = true;
-  errorMessage.value = ''; // Reset lỗi cũ
-  console.log("Google Sign-In Success:", response);
-  const { credential } = response; // credential chính là ID Token (JWT)
-   if (!credential) {
-       handleGoogleSignInError("Không nhận được credential từ Google.");
-       return;
-   }
-
-  // Optional: Giải mã credential để xem thông tin (chỉ để debug)
-  // try {
-  //    const userData = decodeCredential(credential);
-  //    console.log("Decoded Google User Data:", userData);
-  // } catch (decodeError) {
-  //    console.error("Error decoding Google credential:", decodeError);
-  // }
-
-
-  try {
-    // Gọi action trong store để gửi idToken về backend
-    await authStore.loginWithGoogle(credential);
-    // Đăng nhập thành công, store sẽ tự động điều hướng
-  } catch (error) {
-    errorMessage.value = error.message || 'Đăng nhập bằng Google thất bại.';
-    showSnackbar(errorMessage.value, 'error');
-  } finally {
-     googleLoading.value = false;
-  }
-};
-
-// Xử lý callback khi đăng nhập Google thất bại
-const handleGoogleSignInError = (error) => {
-   googleLoading.value = false; // Dừng loading nếu có
-  console.error("Google Sign-In Error:", error);
-   let message = 'Đăng nhập bằng Google không thành công.';
-    if (typeof error === 'object' && error !== null && error.error === 'popup_closed_by_user') {
-        message = 'Bạn đã đóng cửa sổ đăng nhập Google.';
-    } else if (typeof error === 'string') {
-        message = error; // Sử dụng thông báo lỗi được truyền vào
-    }
-   errorMessage.value = message;
-   showSnackbar(errorMessage.value, 'error');
-};
-
-// Optional: Hàm để kích hoạt Google Sign In từ nút tùy chỉnh (nếu không dùng GoogleSignInButton)
-// Cần import { googleTokenLogin } from "vue3-google-signin"
-// const triggerGoogleSignIn = () => {
-//    googleLoading.value = true;
-//    errorMessage.value = '';
-//   googleTokenLogin().then(handleGoogleSignInSuccess).catch(handleGoogleSignInError);
-// }
-
-// Optional: Google One Tap login (hiển thị popup tự động)
-// import { googleOneTap } from "vue3-google-signin";
-// onMounted(() => {
-//   googleOneTap({autoLogin: false}) // autoLogin: false để chỉ hiện popup khi click
-//     .then(handleGoogleSignInSuccess)
-//     .catch(handleGoogleSignInError);
-// });
-
-// --- END GOOGLE LOGIN HANDLERS ---
+// --- CÁC HÀM XỬ LÝ GOOGLE SIGN IN ĐÃ ĐƯỢC CHUYỂN VÀO GOOGLELOGINBUTTON.VUE ---
 </script>
-
 
 <style scoped>
 .fill-height {

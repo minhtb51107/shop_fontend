@@ -70,7 +70,7 @@
 
           <v-row>
             <v-col cols="12" sm="6">
-              <v-btn color="primary" block size="large" prepend-icon="mdi-cart-plus" @click="addToCart">
+              <v-btn color="primary" block size="large" prepend-icon="mdi-cart-plus" @click="addToCart(product, quantity)">
                 Thêm vào giỏ
               </v-btn>
             </v-col>
@@ -136,15 +136,65 @@
           </v-card>
       </v-col>
 
-       <v-col cols="12" class="mt-10">
+      <v-col cols="12" class="mt-10">
         <h2 class="text-h5 font-weight-medium mb-4">Sản Phẩm Tương Tự</h2>
-         <v-row>
-            <v-col v-for="n in 4" :key="`rel-${n}`" cols="12" sm="6" md="3">
-              <v-skeleton-loader type="card-avatar, list-item-two-line"></v-skeleton-loader>
+         <v-row v-if="loadingRelated">
+            <v-col v-for="n in 4" :key="`rel-sk-${n}`" cols="12" sm="6" md="3">
+              <v-skeleton-loader type="image, list-item-two-line, actions"></v-skeleton-loader>
             </v-col>
           </v-row>
+          <v-row v-else-if="relatedProducts.length > 0">
+            <v-col v-for="related in relatedProducts" :key="related.id" cols="12" sm="6" md="3">
+               <v-card class="mx-auto my-2 fill-height d-flex flex-column" hover :to="{ name: 'productDetail', params: { id: related.id } }">
+                 <v-card flat border>
+   <v-carousel v-if="product.images && product.images.length > 1" show-arrows="hover" cycle hide-delimiters height="400">
+     <v-carousel-item
+       v-for="(image, i) in product.images" :key="i"
+       :src="image.imageUrl || defaultImage"
+       cover
+     ></v-carousel-item>
+   </v-carousel>
+   <v-img
+      v-else
+      :src="product.imageUrl || defaultImage"
+      height="400px"
+      cover
+      class="rounded"
+    ></v-img>
+</v-card>
+<v-row v-if="product.images && product.images.length > 1" dense class="mt-2">
+    <v-col v-for="(image, i) in product.images" :key="`thumb-${i}`" cols="3">
+        <v-card flat border :class="{ 'border-primary': i === currentImageIndex }" @click="setCurrentImage(i)">
+             <v-img :src="image.imageUrl || defaultImage" height="80" cover></v-img>
+        </v-card>
+    </v-col>
+</v-row>
+                 <v-card-title class="pt-3 pb-1 text-subtitle-2 font-weight-medium">
+                   {{ related.name }}
+                 </v-card-title>
+                  <v-card-subtitle class="pb-2 text-caption">
+                     {{ related.brand?.name || 'N/A' }}
+                  </v-card-subtitle>
+                 <v-card-text class="flex-grow-1 py-0">
+                   <p class="text-body-2 font-weight-bold text-red">{{ formatCurrency(related.price) }}</p>
+                 </v-card-text>
+                 <v-divider></v-divider>
+                 <v-card-actions class="pa-1 justify-end">
+                    <v-btn icon color="grey-lighten-1" size="x-small">
+                       <v-icon>mdi-heart-outline</v-icon>
+                    </v-btn>
+                    <v-btn color="primary" variant="tonal" size="small" @click.prevent="addToCart(related, 1)">
+                        <v-icon start size="small">mdi-cart-plus</v-icon> Thêm
+                    </v-btn>
+                 </v-card-actions>
+               </v-card>
+            </v-col>
+          </v-row>
+          <v-row v-else>
+               <v-col class="text-center text-grey">Không tìm thấy sản phẩm tương tự.</v-col>
+           </v-row>
       </v-col>
-    </v-row>
+      </v-row>
 
     <v-snackbar
       v-model="snackbar.show"
@@ -168,8 +218,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import productService from '@/services/productService';
-// import { VSkeletonLoader } from 'vuetify/labs/components';
-import { useCartStore } from '@/stores/cart'; // Import cart store
+import { useCartStore } from '@/stores/cart';
 
 const route = useRoute();
 const router = useRouter();
@@ -177,21 +226,23 @@ const product = ref(null);
 const loading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
-const quantity = ref(1); // Số lượng chọn mua
-const tab = ref('description'); // Tab mặc định hiển thị
-const cartStore = useCartStore(); // Sử dụng cart store
+const quantity = ref(1);
+const tab = ref('description');
+const cartStore = useCartStore();
 
-// Lấy ID sản phẩm từ route params
+// --- THÊM STATE CHO SẢN PHẨM LIÊN QUAN ---
+const relatedProducts = ref([]);
+const loadingRelated = ref(true);
+// ---
+
 const productId = computed(() => route.params.id);
 
-// Breadcrumbs data
 const breadcrumbs = computed(() => [
   { title: 'Trang Chủ', disabled: false, to: '/' },
   { title: 'Sản Phẩm', disabled: false, to: '/products' },
   { title: product.value ? product.value.name : 'Chi Tiết', disabled: true },
 ]);
 
-// State cho Snackbar
 const snackbar = ref({
   show: false,
   text: '',
@@ -200,7 +251,6 @@ const snackbar = ref({
   showCartButton: false,
 });
 
-// Hàm hiển thị Snackbar
 const showSnackbar = (text, color = 'success', showCartButton = false) => {
   snackbar.value.text = text;
   snackbar.value.color = color;
@@ -208,22 +258,41 @@ const showSnackbar = (text, color = 'success', showCartButton = false) => {
   snackbar.value.show = true;
 };
 
-// Hàm fetch chi tiết sản phẩm
+// --- HÀM MỚI ĐỂ LẤY SẢN PHẨM LIÊN QUAN ---
+const fetchRelatedProducts = async (id) => {
+  loadingRelated.value = true;
+  try {
+    // Giả sử productService có hàm getRelatedProducts(productId, limit)
+    // Tạm thời lấy lại danh sách sản phẩm và lọc ra vài cái khác sản phẩm hiện tại
+    const allProducts = await productService.getAllProducts(); // Tạm dùng lại API này
+    // Thay thế đoạn map cũ bằng:
+relatedProducts.value = data; // Gán trực tiếp
+  } catch (err) {
+    console.error("Error fetching related products:", err);
+    relatedProducts.value = [];
+  } finally {
+    loadingRelated.value = false;
+  }
+};
+// ---
+
 const fetchProductDetail = async (id) => {
   loading.value = true;
   error.value = false;
   errorMessage.value = '';
   product.value = null;
   quantity.value = 1;
+  // Reset related products khi load sản phẩm mới
+  relatedProducts.value = [];
+  loadingRelated.value = true;
   try {
     const data = await productService.getProductById(id);
-    product.value = {
-        ...data,
-        price: data.price || Math.floor(Math.random() * (50000000 - 5000000 + 1)) + 5000000,
-        imageUrl: data.imageUrl || `https://picsum.photos/400/300?random=${data.id}`
-    };
+    // Thay thế đoạn gán product.value cũ bằng:
+product.value = data; // Gán trực tiếp nếu API trả đúng ProductResponse
     if (product.value) {
         document.title = `${product.value.name} - Shop Điện Tử`;
+        // --- GỌI HÀM LẤY RELATED PRODUCTS ---
+        fetchRelatedProducts(product.value.id);
     }
   } catch (err) {
     error.value = true;
@@ -235,36 +304,40 @@ const fetchProductDetail = async (id) => {
   }
 };
 
-// Hàm định dạng tiền tệ
 const formatCurrency = (value) => {
   if (value === null || value === undefined) return 'Liên hệ';
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
-// Hàm định dạng key của specs
 const formatSpecKey = (key) => {
   if (!key) return '';
   return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim();
 };
 
-// Hàm tăng/giảm số lượng
 const incrementQuantity = () => quantity.value++;
 const decrementQuantity = () => {
   if (quantity.value > 1) quantity.value--;
 };
 
-// Hàm xử lý thêm vào giỏ hàng
-const addToCart = () => {
-  if (product.value) {
-    cartStore.addItem(product.value, quantity.value);
-    console.log(`Đã thêm ${quantity.value} sp ${product.value.name} vào store.`);
-    showSnackbar(`Đã thêm ${quantity.value} "${product.value.name}" vào giỏ hàng!`, 'success', true);
+// --- SỬA LẠI HÀM addToCart ---
+const addToCart = (productToAdd, quantityToAdd = 1) => {
+  if (productToAdd) {
+      // Cần tạo đối tượng item hợp lệ cho cart store
+      const itemToAdd = {
+          id: productToAdd.id, // Sử dụng ID chính của product
+          name: productToAdd.name,
+          price: productToAdd.price, // Giá đã được giả lập hoặc lấy từ API
+          imageUrl: productToAdd.imageUrl,
+          // Thêm các thông tin khác nếu cart store cần
+      };
+    cartStore.addItem(itemToAdd, quantityToAdd); // Truyền quantity vào store
+    showSnackbar(`Đã thêm ${quantityToAdd} "${productToAdd.name}" vào giỏ hàng!`, 'success', true);
   } else {
      showSnackbar('Không thể thêm sản phẩm vào giỏ hàng.', 'error');
   }
 };
+// ---
 
-// Gọi API khi component mount hoặc ID thay đổi
 onMounted(() => {
   fetchProductDetail(productId.value);
 });
@@ -293,11 +366,15 @@ watch(productId, (newId) => {
 .v-img {
     position: relative;
 }
-/* Style cho tab và table (tùy chọn) */
 .v-table tbody tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 .v-table th {
   background-color: #eeeeee;
 }
+/* Thêm style cho sản phẩm liên quan */
+.fill-height { height: 100%; }
+.v-card .v-card-title { font-size: 0.9rem !important; line-height: 1.2; white-space: normal; /* Cho phép xuống dòng */}
+.v-card .v-card-subtitle { font-size: 0.75rem; }
+.v-card .v-card-text p { font-size: 0.9rem; margin-bottom: 4px !important;}
 </style>
