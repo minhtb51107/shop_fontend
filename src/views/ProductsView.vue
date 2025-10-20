@@ -140,11 +140,12 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'; // <-- THÊM useRoute
 import productService from '@/services/productService';
 import { useCartStore } from '@/stores/cart';
 import _ from 'lodash';
 
+const route = useRoute(); // <-- THÊM DÒNG NÀY
 const router = useRouter();
 const cartStore = useCartStore();
 const products = ref([]);
@@ -272,10 +273,20 @@ const handlePageChange = (newPage) => {
 };
 
 // --- GỌI API KHI MOUNT ---
+// --- GỌI API KHI MOUNT ---
 onMounted(() => {
-    fetchProducts();
-    fetchCategories(); // Gọi lấy categories thật
-    fetchBrands(); // Gọi lấy brands thật
+    // --- THÊM LOGIC NÀY ---
+    // Đọc categoryId từ query param trên URL
+    const queryCategoryId = route.query.categoryId;
+    if (queryCategoryId) {
+        // Cập nhật state của bộ lọc
+        filters.value.categoryId = parseInt(queryCategoryId, 10);
+    }
+    // --- KẾT THÚC THÊM ---
+
+    fetchProducts(); // Bây giờ fetchProducts sẽ dùng categoryId (nếu có)
+    fetchCategories();
+    fetchBrands();
 });
 
 // --- CÁC HÀM TIỆN ÍCH KHÁC ---

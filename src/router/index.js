@@ -37,12 +37,6 @@ const router = createRouter({
     component: TermsView,
     meta: { title: 'Điều Khoản Dịch Vụ' }
     },
-    {
-      path: '/register',
-      name: 'register',
-      component: RegisterView,
-      meta: { title: 'Đăng Ký', guestOnly: true }
-    },
     // --- THÊM ROUTES FORGOT/RESET PASSWORD ---
     {
       path: '/forgot-password',
@@ -116,14 +110,6 @@ const router = createRouter({
       component: RegisterView,
       meta: { title: 'Đăng Ký', guestOnly: true } // guestOnly: chỉ truy cập khi chưa đăng nhập
     },
-     // --- VÍ DỤ ROUTE CẦN ĐĂNG NHẬP ---
-     {
-       path: '/profile',
-       name: 'profile',
-       // component: () => import('../views/ProfileView.vue'), // Lazy load nếu muốn
-       component: HomeView, // Tạm thời dùng HomeView để test
-       meta: { title: 'Hồ Sơ Của Tôi', requiresAuth: true } // requiresAuth: cần đăng nhập
-     },
      {
        path: '/checkout',
        name: 'checkout',
