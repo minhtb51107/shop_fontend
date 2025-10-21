@@ -3,7 +3,7 @@
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card class="elevation-12 pa-6 rounded-lg">
-           <v-img src="/src/assets/logo.svg" max-height="60" contain class="mb-6 mx-auto"></v-img>
+          <v-img src="/src/assets/logo.svg" max-height="60" contain class="mb-6 mx-auto"></v-img>
           <v-card-title class="text-center text-h5 font-weight-bold mb-4 text-primary">
             Đăng Nhập Tài Khoản
           </v-card-title>
@@ -14,20 +14,34 @@
               </v-alert>
 
               <v-text-field
-                v-model="email" label="Email" prepend-inner-icon="mdi-email-outline" variant="outlined"
-                :rules="emailRules" required class="mb-3" density="comfortable"
+                v-model="email"
+                label="Email"
+                name="email"
+                prepend-inner-icon="mdi-email-outline"
+                variant="outlined"
+                :rules="emailRules"
+                required
+                class="mb-3"
+                density="comfortable"
               ></v-text-field>
 
               <v-text-field
-                v-model="password" label="Mật khẩu" :type="showPassword ? 'text' : 'password'"
-                prepend-inner-icon="mdi-lock-outline" :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                @click:append-inner="showPassword = !showPassword" variant="outlined" :rules="passwordRules"
-                required density="comfortable"
+                v-model="password"
+                label="Mật khẩu"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
+                prepend-inner-icon="mdi-lock-outline"
+                :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                @click:append-inner="showPassword = !showPassword"
+                variant="outlined"
+                :rules="passwordRules"
+                required
+                density="comfortable"
               ></v-text-field>
 
-               <div class="d-flex justify-space-between align-center mb-4">
-                 <v-checkbox label="Ghi nhớ đăng nhập" density="compact" hide-details></v-checkbox>
-                 <router-link :to="{ name: 'forgotPassword' }" class="text-caption text-primary text-decoration-none">Quên mật khẩu?</router-link>
+              <div class="d-flex justify-space-between align-center mb-4">
+                <v-checkbox label="Ghi nhớ đăng nhập" density="compact" hide-details></v-checkbox>
+                <router-link :to="{ name: 'forgotPassword' }" class="text-caption text-primary text-decoration-none">Quên mật khẩu?</router-link>
               </div>
 
               <v-btn :loading="loading" :disabled="loading" type="submit" color="primary" block size="large">
@@ -35,33 +49,32 @@
               </v-btn>
 
               <v-divider class="my-4">Hoặc đăng nhập với</v-divider>
-               <v-row dense>
-                 <v-col>
-                   <!-- === THAY THẾ COMPONENT TẠI ĐÂY === -->
-                   <GoogleLoginButton />
-                 </v-col>
-                </v-row>
-               </v-form>
+              <v-row dense>
+                <v-col>
+                  <GoogleLoginButton />
+                </v-col>
+              </v-row>
+            </v-form>
           </v-card-text>
-           <v-card-actions class="justify-center mt-4">
-             <span class="text-body-2">Chưa có tài khoản?</span>
-             <router-link to="/register" class="ms-1 text-primary text-decoration-none font-weight-medium">Đăng ký ngay</router-link>
+          <v-card-actions class="justify-center mt-4">
+            <span class="text-body-2">Chưa có tài khoản?</span>
+            <router-link to="/register" class="ms-1 text-primary text-decoration-none font-weight-medium">Đăng ký ngay</router-link>
           </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
-     <v-snackbar
-        v-model="snackbar.show"
-        :color="snackbar.color"
-        :timeout="snackbar.timeout"
-        location="top right"
-        variant="elevated"
-      >
-        {{ snackbar.text }}
-        <template v-slot:actions>
-            <v-btn icon="mdi-close" variant="text" @click="snackbar.show = false"></v-btn>
-        </template>
-     </v-snackbar>
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+      location="top right"
+      variant="elevated"
+    >
+      {{ snackbar.text }}
+      <template v-slot:actions>
+        <v-btn icon="mdi-close" variant="text" @click="snackbar.show = false"></v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 

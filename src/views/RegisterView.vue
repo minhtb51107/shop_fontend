@@ -4,10 +4,10 @@
       <v-col cols="12" sm="10" md="8" lg="6">
         <v-card class="elevation-12 pa-6 rounded-lg">
           <v-img
-                src="/src/assets/logo.svg" max-height="60"
-                contain
-                class="mb-6 mx-auto"
-            ></v-img>
+            src="/src/assets/logo.svg" max-height="60"
+            contain
+            class="mb-6 mx-auto"
+          ></v-img>
           <v-card-title class="text-center text-h5 font-weight-bold mb-4 text-primary">
             Tạo Tài Khoản Mới
           </v-card-title>
@@ -22,13 +22,13 @@
                 class="mb-4"
                 @click:close="errorMessage = ''"
               >
-                 <ul v-if="Array.isArray(errorMessage)" class="pl-4">
-                     <li v-for="(msg, index) in errorMessage" :key="index">{{ msg }}</li>
-                 </ul>
-                 <span v-else>{{ errorMessage }}</span>
+                <ul v-if="Array.isArray(errorMessage)" class="pl-4">
+                  <li v-for="(msg, index) in errorMessage" :key="index">{{ msg }}</li>
+                </ul>
+                <span v-else>{{ errorMessage }}</span>
               </v-alert>
 
-               <v-alert
+              <v-alert
                 v-if="successMessage"
                 type="success"
                 density="compact"
@@ -41,6 +41,7 @@
               <v-text-field
                 v-model="fullname"
                 label="Họ và tên"
+                name="fullname"
                 prepend-inner-icon="mdi-account-outline"
                 variant="outlined"
                 :rules="fullnameRules"
@@ -52,6 +53,7 @@
               <v-text-field
                 v-model="email"
                 label="Email"
+                name="email"
                 prepend-inner-icon="mdi-email-outline"
                 variant="outlined"
                 :rules="emailRules"
@@ -63,6 +65,7 @@
               <v-text-field
                 v-model="phoneNumber"
                 label="Số điện thoại"
+                name="phoneNumber"
                 prepend-inner-icon="mdi-phone-outline"
                 variant="outlined"
                 :rules="phoneRules"
@@ -74,6 +77,7 @@
               <v-text-field
                 v-model="password"
                 label="Mật khẩu"
+                name="password"
                 :type="showPassword ? 'text' : 'password'"
                 prepend-inner-icon="mdi-lock-outline"
                 :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
@@ -82,15 +86,16 @@
                 :rules="passwordRules"
                 required
                 class="mb-3"
-                 density="comfortable"
+                density="comfortable"
               ></v-text-field>
 
-               <v-text-field
+              <v-text-field
                 v-model="confirmPassword"
                 label="Xác nhận mật khẩu"
+                name="confirmPassword"
                 :type="showConfirmPassword ? 'text' : 'password'"
                 prepend-inner-icon="mdi-lock-check-outline"
-                 :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 @click:append-inner="showConfirmPassword = !showConfirmPassword"
                 variant="outlined"
                 :rules="confirmPasswordRules"
@@ -104,14 +109,13 @@
                 density="compact"
                 class="mt-0 pt-0 mb-4"
               >
-                 <template v-slot:label>
-                   <div>
-                     Tôi đồng ý với
-                     <router-link to="/terms" class="text-primary text-decoration-none">Điều khoản dịch vụ</router-link>
-                   </div>
-                 </template>
-               </v-checkbox>
-
+                <template v-slot:label>
+                  <div>
+                    Tôi đồng ý với
+                    <router-link to="/terms" class="text-primary text-decoration-none">Điều khoản dịch vụ</router-link>
+                  </div>
+                </template>
+              </v-checkbox>
 
               <v-btn
                 :loading="loading"
@@ -125,9 +129,9 @@
 
             </v-form>
           </v-card-text>
-           <v-card-actions class="justify-center mt-4">
-             <span class="text-body-2">Đã có tài khoản?</span>
-             <router-link to="/login" class="ms-1 text-primary text-decoration-none font-weight-medium">Đăng nhập ngay</router-link>
+          <v-card-actions class="justify-center mt-4">
+            <span class="text-body-2">Đã có tài khoản?</span>
+            <router-link to="/login" class="ms-1 text-primary text-decoration-none font-weight-medium">Đăng nhập ngay</router-link>
           </v-card-actions>
         </v-card>
       </v-col>
@@ -176,7 +180,6 @@ const confirmPasswordRules = computed(() => [
 ]);
 const termsRules = [ v => !!v || 'Bạn phải đồng ý với Điều khoản dịch vụ' ];
 
-
 const handleRegister = async () => {
   // Validate form
   const { valid } = await registerForm.value.validate();
@@ -197,18 +200,18 @@ const handleRegister = async () => {
     // Không cần chuyển hướng ngay, để người dùng đọc thông báo
     // setTimeout(() => router.push('/login'), 3000); // Tùy chọn: tự động chuyển sau 3s
   } catch (error) {
-     // Xử lý lỗi từ backend (có thể là string hoặc object validation errors)
-     if (error && error.message) {
-         // Nếu lỗi có cấu trúc từ GlobalExceptionHandler
+    // Xử lý lỗi từ backend (có thể là string hoặc object validation errors)
+    if (error && error.message) {
+        // Nếu lỗi có cấu trúc từ GlobalExceptionHandler
         errorMessage.value = error.message;
-     } else if (typeof error === 'object' && error !== null) {
-         // Nếu backend trả về lỗi validation chi tiết (ví dụ từ Spring Validation)
-         // Cần điều chỉnh tùy theo cấu trúc lỗi thực tế của bạn
-         errorMessage.value = Object.values(error).flat(); // Lấy tất cả thông báo lỗi
-     }
-     else {
+    } else if (typeof error === 'object' && error !== null) {
+        // Nếu backend trả về lỗi validation chi tiết (ví dụ từ Spring Validation)
+        // Cần điều chỉnh tùy theo cấu trúc lỗi thực tế của bạn
+        errorMessage.value = Object.values(error).flat(); // Lấy tất cả thông báo lỗi
+    }
+    else {
         errorMessage.value = 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
-     }
+    }
     console.error("Register Error:", error);
   } finally {
     loading.value = false;

@@ -9,32 +9,32 @@
     <v-row>
       <v-col cols="12" md="3" v-if="!$vuetify.display.mobile">
         <v-card flat border>
-           <v-list nav density="compact">
-             <v-list-item
-                v-for="(item, i) in profileMenuItems"
-                :key="i"
-                :value="item.value"
-                @click="activeTab = item.value"
-                :active="activeTab === item.value"
-                color="primary"
-                rounded="lg"
-              >
-               <template v-slot:prepend>
-                 <v-icon :icon="item.icon"></v-icon>
-               </template>
-               <v-list-item-title v-text="item.text"></v-list-item-title>
-             </v-list-item>
-           </v-list>
+          <v-list nav density="compact">
+            <v-list-item
+              v-for="(item, i) in profileMenuItems"
+              :key="i"
+              :value="item.value"
+              @click="activeTab = item.value"
+              :active="activeTab === item.value"
+              color="primary"
+              rounded="lg"
+            >
+              <template v-slot:prepend>
+                <v-icon :icon="item.icon"></v-icon>
+              </template>
+              <v-list-item-title v-text="item.text"></v-list-item-title>
+            </v-list-item>
+          </v-list>
         </v-card>
       </v-col>
 
       <v-col cols="12" md="9">
-         <v-tabs v-model="activeTab" bg-color="primary" dark grow v-if="$vuetify.display.mobile" class="mb-4 rounded">
-            <v-tab v-for="item in profileMenuItems" :key="item.value" :value="item.value">
-                <v-icon start>{{ item.icon }}</v-icon>
-                {{ item.text }}
-            </v-tab>
-          </v-tabs>
+        <v-tabs v-model="activeTab" bg-color="primary" dark grow v-if="$vuetify.display.mobile" class="mb-4 rounded">
+          <v-tab v-for="item in profileMenuItems" :key="item.value" :value="item.value">
+            <v-icon start>{{ item.icon }}</v-icon>
+            {{ item.text }}
+          </v-tab>
+        </v-tabs>
 
         <v-card flat border>
           <v-window v-model="activeTab">
@@ -45,26 +45,27 @@
               <v-card-text>
                 <v-form ref="profileForm" @submit.prevent="updateProfile">
                   <v-row>
-                     <v-col cols="12" class="text-center mb-4">
-                        <v-avatar size="120" color="grey-lighten-3">
-                           <v-img :src="avatarPreview || user?.photo || defaultAvatar" cover></v-img>
-                        </v-avatar>
-                         <v-btn
-                            variant="text"
-                            size="small"
-                            class="mt-2 text-caption"
-                            @click="triggerAvatarUpload"
-                            prepend-icon="mdi-camera-outline"
-                          >
-                           Thay đổi ảnh
-                         </v-btn>
-                          <input type="file" ref="avatarInput" @change="previewAvatar" accept="image/*" hidden />
-                     </v-col>
+                    <v-col cols="12" class="text-center mb-4">
+                      <v-avatar size="120" color="grey-lighten-3">
+                        <v-img :src="avatarPreview || user?.photo || defaultAvatar" cover></v-img>
+                      </v-avatar>
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        class="mt-2 text-caption"
+                        @click="triggerAvatarUpload"
+                        prepend-icon="mdi-camera-outline"
+                      >
+                        Thay đổi ảnh
+                      </v-btn>
+                      <input type="file" ref="avatarInput" @change="previewAvatar" accept="image/*" hidden />
+                    </v-col>
 
                     <v-col cols="12" sm="6">
                       <v-text-field
                         v-model="profileData.fullname"
                         label="Họ và tên"
+                        name="fullname"
                         variant="outlined"
                         :rules="[rules.required]"
                         density="comfortable"
@@ -88,120 +89,120 @@
                         label="Số điện thoại"
                         variant="outlined"
                         :rules="[rules.phone]"
-                         density="comfortable"
-                         prepend-inner-icon="mdi-phone-outline"
+                        density="comfortable"
+                        prepend-inner-icon="mdi-phone-outline"
                       ></v-text-field>
                     </v-col>
-                    </v-row>
-                   <v-alert
-                      v-if="profileMessage.text"
-                      :type="profileMessage.type"
-                      density="compact"
-                      variant="tonal"
-                      closable
-                      class="mt-4"
-                      @click:close="profileMessage.text = ''"
+                  </v-row>
+                  <v-alert
+                    v-if="profileMessage.text"
+                    :type="profileMessage.type"
+                    density="compact"
+                    variant="tonal"
+                    closable
+                    class="mt-4"
+                    @click:close="profileMessage.text = ''"
+                  >
+                    {{ profileMessage.text }}
+                  </v-alert>
+                  <v-card-actions class="mt-4 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      type="submit"
+                      color="primary"
+                      :loading="profileLoading"
+                      :disabled="!isProfileChanged || profileLoading"
+                      variant="elevated"
                     >
-                      {{ profileMessage.text }}
-                    </v-alert>
-                   <v-card-actions class="mt-4 pa-0">
-                     <v-spacer></v-spacer>
-                      <v-btn
-                        type="submit"
-                        color="primary"
-                        :loading="profileLoading"
-                        :disabled="!isProfileChanged || profileLoading"
-                        variant="elevated"
-                      >
-                         <v-icon left>mdi-content-save-outline</v-icon>
-                        Lưu thay đổi
-                      </v-btn>
-                   </v-card-actions>
+                      <v-icon left>mdi-content-save-outline</v-icon>
+                      Lưu thay đổi
+                    </v-btn>
+                  </v-card-actions>
                 </v-form>
               </v-card-text>
             </v-window-item>
 
             <v-window-item value="password">
               <v-card-title class="text-h6 font-weight-medium">Đổi mật khẩu</v-card-title>
-               <v-card-subtitle>Thay đổi mật khẩu đăng nhập của bạn.</v-card-subtitle>
-                <v-divider class="mt-2 mb-4"></v-divider>
+              <v-card-subtitle>Thay đổi mật khẩu đăng nhập của bạn.</v-card-subtitle>
+              <v-divider class="mt-2 mb-4"></v-divider>
               <v-card-text>
                 <v-form ref="passwordForm" @submit.prevent="changePassword">
-                   <v-row>
-                     <v-col cols="12">
-                       <v-text-field
-                         v-model="passwordData.oldPassword"
-                         label="Mật khẩu cũ"
-                         :type="showOldPassword ? 'text' : 'password'"
-                         variant="outlined"
-                         :rules="[rules.required]"
-                         density="comfortable"
-                         prepend-inner-icon="mdi-lock-outline"
-                          :append-inner-icon="showOldPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                          @click:append-inner="showOldPassword = !showOldPassword"
-                       ></v-text-field>
-                     </v-col>
-                     <v-col cols="12">
-                       <v-text-field
-                         v-model="passwordData.newPassword"
-                         label="Mật khẩu mới"
-                         :type="showNewPassword ? 'text' : 'password'"
-                         variant="outlined"
-                         :rules="[rules.required, rules.min8]"
-                         density="comfortable"
-                         prepend-inner-icon="mdi-lock-plus-outline"
-                          :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                          @click:append-inner="showNewPassword = !showNewPassword"
-                         hint="Ít nhất 8 ký tự"
-                         persistent-hint
-                       ></v-text-field>
-                     </v-col>
-                     <v-col cols="12">
-                       <v-text-field
-                         v-model="passwordData.confirmNewPassword"
-                         label="Xác nhận mật khẩu mới"
-                         :type="showConfirmPassword ? 'text' : 'password'"
-                         variant="outlined"
-                         :rules="[rules.required, confirmPasswordRule]"
-                         density="comfortable"
-                         prepend-inner-icon="mdi-lock-check-outline"
-                          :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                          @click:append-inner="showConfirmPassword = !showConfirmPassword"
-                       ></v-text-field>
-                     </v-col>
-                   </v-row>
-                    <v-alert
-                      v-if="passwordMessage.text"
-                      :type="passwordMessage.type"
-                      density="compact"
-                      variant="tonal"
-                      closable
-                      class="mt-4"
-                      @click:close="passwordMessage.text = ''"
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                        v-model="passwordData.oldPassword"
+                        label="Mật khẩu cũ"
+                        :type="showOldPassword ? 'text' : 'password'"
+                        variant="outlined"
+                        :rules="[rules.required]"
+                        density="comfortable"
+                        prepend-inner-icon="mdi-lock-outline"
+                        :append-inner-icon="showOldPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                        @click:append-inner="showOldPassword = !showOldPassword"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field
+                        v-model="passwordData.newPassword"
+                        label="Mật khẩu mới"
+                        :type="showNewPassword ? 'text' : 'password'"
+                        variant="outlined"
+                        :rules="[rules.required, rules.min8]"
+                        density="comfortable"
+                        prepend-inner-icon="mdi-lock-plus-outline"
+                        :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                        @click:append-inner="showNewPassword = !showNewPassword"
+                        hint="Ít nhất 8 ký tự"
+                        persistent-hint
+                      ></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field
+                        v-model="passwordData.confirmNewPassword"
+                        label="Xác nhận mật khẩu mới"
+                        :type="showConfirmPassword ? 'text' : 'password'"
+                        variant="outlined"
+                        :rules="[rules.required, confirmPasswordRule]"
+                        density="comfortable"
+                        prepend-inner-icon="mdi-lock-check-outline"
+                        :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                        @click:append-inner="showConfirmPassword = !showConfirmPassword"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-alert
+                    v-if="passwordMessage.text"
+                    :type="passwordMessage.type"
+                    density="compact"
+                    variant="tonal"
+                    closable
+                    class="mt-4"
+                    @click:close="passwordMessage.text = ''"
+                  >
+                    {{ passwordMessage.text }}
+                  </v-alert>
+                  <v-card-actions class="mt-4 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      type="submit"
+                      color="primary"
+                      :loading="passwordLoading"
+                      :disabled="passwordLoading"
+                      variant="elevated"
                     >
-                      {{ passwordMessage.text }}
-                    </v-alert>
-                    <v-card-actions class="mt-4 pa-0">
-                     <v-spacer></v-spacer>
-                      <v-btn
-                        type="submit"
-                        color="primary"
-                        :loading="passwordLoading"
-                        :disabled="passwordLoading"
-                        variant="elevated"
-                      >
-                         <v-icon left>mdi-lock-reset</v-icon>
-                        Đổi mật khẩu
-                      </v-btn>
-                   </v-card-actions>
+                      <v-icon left>mdi-lock-reset</v-icon>
+                      Đổi mật khẩu
+                    </v-btn>
+                  </v-card-actions>
                 </v-form>
               </v-card-text>
             </v-window-item>
 
-             <v-window-item value="orders">
+            <v-window-item value="orders">
               <v-card-title class="text-h6 font-weight-medium">Lịch sử đơn hàng</v-card-title>
-               <v-card-subtitle>Xem lại các đơn hàng bạn đã đặt.</v-card-subtitle>
-                <v-divider class="mt-2 mb-4"></v-divider>
+              <v-card-subtitle>Xem lại các đơn hàng bạn đã đặt.</v-card-subtitle>
+              <v-divider class="mt-2 mb-4"></v-divider>
               <v-card-text class="text-center text-grey">
                 <v-icon size="48" class="mb-2">mdi-receipt-text-clock-outline</v-icon>
                 <p>Tính năng đang được phát triển.</p>
@@ -213,18 +214,18 @@
       </v-col>
     </v-row>
 
-      <v-snackbar
-        v-model="snackbar.show"
-        :color="snackbar.color"
-        :timeout="snackbar.timeout"
-        location="top right"
-        variant="elevated"
-      >
-        {{ snackbar.text }}
-        <template v-slot:actions>
-            <v-btn icon="mdi-close" variant="text" @click="snackbar.show = false"></v-btn>
-        </template>
-     </v-snackbar>
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+      location="top right"
+      variant="elevated"
+    >
+      {{ snackbar.text }}
+      <template v-slot:actions>
+        <v-btn icon="mdi-close" variant="text" @click="snackbar.show = false"></v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -344,16 +345,15 @@ const updateProfile = async () => {
       // TODO: Xử lý upload avatarFile lên server nếu có
       // 1. Upload avatarFile -> Nhận URL mới
       // 2. Gửi URL mới này cùng profileData
-       let photoUrl = user.value?.photo; // Giữ ảnh cũ nếu không đổi
+      let photoUrl = user.value?.photo; // Giữ ảnh cũ nếu không đổi
       // if (avatarFile) {
-      //    photoUrl = await uploadAvatarToServer(avatarFile); // Hàm upload giả định
+      //     photoUrl = await uploadAvatarToServer(avatarFile); // Hàm upload giả định
       // }
-
 
     const updatedUserData = await userService.updateMyProfile({
       fullname: profileData.value.fullname,
       phoneNumber: profileData.value.phoneNumber,
-       photo: photoUrl, // Gửi URL ảnh (nếu có thay đổi)
+      photo: photoUrl, // Gửi URL ảnh (nếu có thay đổi)
     });
     // Cập nhật lại user trong store (quan trọng)
     authStore.user = { ...authStore.user, ...updatedUserData };
@@ -404,7 +404,6 @@ watch(() => authStore.user, (newUser) => {
         syncProfileData();
     }
 }, { immediate: true }); // immediate: true để chạy lần đầu
-
 
 // Menu items cho profile page
 const profileMenuItems = ref([
