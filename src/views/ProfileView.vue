@@ -60,7 +60,6 @@
                       </v-btn>
                       <input type="file" ref="avatarInput" @change="previewAvatar" accept="image/*" hidden />
                     </v-col>
-
                     <v-col cols="12" sm="6">
                       <v-text-field
                         v-model="profileData.fullname"
@@ -204,12 +203,58 @@
               <v-card-subtitle>Xem lại các đơn hàng bạn đã đặt.</v-card-subtitle>
               <v-divider class="mt-2 mb-4"></v-divider>
               <v-card-text class="text-center text-grey">
-                <v-icon size="48" class="mb-2">mdi-receipt-text-clock-outline</v-icon>
-                <p>Tính năng đang được phát triển.</p>
-              </v-card-text>
+                 <p>Xem chi tiết tại <router-link :to="{ name: 'orders' }">đây</router-link>.</p>
+               </v-card-text>
             </v-window-item>
 
-          </v-window>
+            <v-window-item value="wishlist">
+              <v-card-title class="text-h6 font-weight-medium">Danh sách yêu thích</v-card-title>
+              <v-card-subtitle>Các sản phẩm bạn đã lưu lại.</v-card-subtitle>
+              <v-divider class="mt-2 mb-4"></v-divider>
+              <v-card-text>
+                <div v-if="wishlistLoading" class="text-center pa-5">
+                  <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                  <p class="mt-3 text-grey">Đang tải danh sách...</p>
+                </div>
+                <v-alert v-else-if="wishlistError" type="error" variant="tonal" dense>
+                  {{ wishlistErrorMessage || 'Lỗi tải danh sách yêu thích.' }}
+                </v-alert>
+                <div v-else-if="!wishlistItems || wishlistItems.length === 0" class="text-center text-grey pa-5">
+                  <v-icon size="48" class="mb-2">mdi-heart-off-outline</v-icon><br>
+                  Danh sách yêu thích của bạn đang trống.
+                  <v-btn variant="text" color="primary" to="/products" class="mt-2">Khám phá sản phẩm</v-btn>
+                </div>
+                <v-list lines="three" v-else>
+                  <v-list-item
+                    v-for="item in wishlistItems"
+                    :key="item.variant.id"
+                    :prepend-avatar="item.variant.productImageUrl || defaultAvatar"
+                    :title="item.variant.productName"
+                    :subtitle="`Màu: ${item.variant.color || 'N/A'} - SKU: ${item.variant.sku}`"
+                    class="mb-2 wishlist-item-hover"
+                    @click="goToProduct(item.variant.productId)"
+                    style="cursor: pointer;"
+                  >
+                    <template v-slot:append>
+                       <div class="d-flex flex-column align-end">
+                          <span class="text-red font-weight-medium mb-1">{{ formatCurrency(item.variant.price) }}</span>
+                          <v-btn
+                            icon="mdi-delete-outline"
+                            variant="text"
+                            color="grey"
+                            size="small"
+                            @click.stop="removeFromWishlist(item.variant.id, item.variant.productName)"
+                            :loading="removingWishlistItemId === item.variant.id"
+                            title="Xóa khỏi yêu thích"
+                          ></v-btn>
+                       </div>
+                    </template>
+                     <v-divider v-if="wishlistItems.indexOf(item) < wishlistItems.length - 1" class="mt-1"></v-divider>
+                  </v-list-item>
+                </v-list>
+              </v-card-text>
+            </v-window-item>
+            </v-window>
         </v-card>
       </v-col>
     </v-row>
@@ -231,101 +276,88 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router'; // Import useRouter
 import { useAuthStore } from '@/stores/auth';
-import userService from '@/services/userService'; // Import userService
-import defaultAvatar from '@/assets/default-avatar.png'; // Tạo ảnh avatar mặc định
+import { useWishlistStore } from '@/stores/wishlistStore'; // Import wishlist store
+import userService from '@/services/userService';
+import wishlistService from '@/services/wishlistService'; // Import wishlist service
+import defaultAvatar from '@/assets/default-avatar.png';
 
-// --- Stores and Refs ---
+// --- Stores and Router ---
 const authStore = useAuthStore();
-const user = computed(() => authStore.user); // Lấy user từ store
+const wishlistStore = useWishlistStore(); // Sử dụng wishlist store
+const router = useRouter(); // Sử dụng router
+const user = computed(() => authStore.user);
 
-const activeTab = ref('info'); // Tab đang active
-const profileForm = ref(null); // Ref cho form profile
-const passwordForm = ref(null); // Ref cho form password
-
-// Data for profile form
-const profileData = ref({
-  fullname: '',
-  phoneNumber: '',
-  // photo: null, // Sẽ xử lý riêng
-});
-
-// Data for password form
-const passwordData = ref({
-  oldPassword: '',
-  newPassword: '',
-  confirmNewPassword: '',
-});
-
-// Loading and message states
-const profileLoading = ref(false);
-const passwordLoading = ref(false);
-const profileMessage = ref({ type: 'success', text: '' });
-const passwordMessage = ref({ type: 'success', text: '' });
+// --- State chung ---
+const activeTab = ref('info');
+const profileForm = ref(null);
+const passwordForm = ref(null);
 const snackbar = ref({ show: false, text: '', color: 'success', timeout: 3000 });
 
-// Avatar preview
+// --- State cho Tab Thông tin cá nhân ---
+const profileData = ref({ fullname: '', phoneNumber: '' });
+const profileLoading = ref(false);
+const profileMessage = ref({ type: 'success', text: '' });
 const avatarPreview = ref(null);
-const avatarInput = ref(null); // Ref cho input file
-let avatarFile = null; // Biến lưu file ảnh đã chọn
+const avatarInput = ref(null);
+let avatarFile = null;
+const isProfileChanged = computed(() => {
+    if (!user.value) return false;
+    return profileData.value.fullname !== (user.value.fullname || '') ||
+           profileData.value.phoneNumber !== (user.value.phoneNumber || '') ||
+           !!avatarFile;
+});
 
-// Password visibility toggles
+// --- State cho Tab Đổi mật khẩu ---
+const passwordData = ref({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
+const passwordLoading = ref(false);
+const passwordMessage = ref({ type: 'success', text: '' });
 const showOldPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
 
-// --- Computed Properties ---
-// Kiểm tra xem thông tin profile có thay đổi không
-const isProfileChanged = computed(() => {
-    if (!user.value) return false;
-    // Kiểm tra cả avatarFile
-    return profileData.value.fullname !== user.value.fullname ||
-           profileData.value.phoneNumber !== (user.value.phoneNumber || '') || // Xử lý null
-           !!avatarFile; // True nếu có file avatar mới
-});
+// --- State cho Tab Danh sách yêu thích ---
+const wishlistItems = ref([]); // Danh sách sản phẩm yêu thích
+const wishlistLoading = ref(false);
+const wishlistError = ref(false);
+const wishlistErrorMessage = ref('');
+const removingWishlistItemId = ref(null); // ID của item đang được xóa (để hiển thị loading)
 
 // --- Validation Rules ---
 const rules = {
   required: value => !!value || 'Thông tin bắt buộc.',
   min8: value => (value && value.length >= 8) || 'Ít nhất 8 ký tự.',
-  phone: value => !value || /^(0[3|5|7|8|9])+([0-9]{8})\b/.test(value) || 'Số điện thoại không hợp lệ.', // Cho phép rỗng
+  phone: value => !value || /^(0[3|5|7|8|9])+([0-9]{8})\b/.test(value) || 'Số điện thoại không hợp lệ.',
 };
 const confirmPasswordRule = computed(() =>
     passwordData.value.newPassword === passwordData.value.confirmNewPassword || 'Mật khẩu xác nhận không khớp.'
 );
 
 // --- Methods ---
-// Hiển thị snackbar
 const showSnackbar = (text, color = 'success') => {
   snackbar.value.text = text;
   snackbar.value.color = color;
   snackbar.value.show = true;
 };
 
-// Cập nhật profileData khi user từ store thay đổi
 const syncProfileData = () => {
   if (user.value) {
     profileData.value.fullname = user.value.fullname || '';
     profileData.value.phoneNumber = user.value.phoneNumber || '';
-    avatarPreview.value = user.value.photo || defaultAvatar; // Cập nhật preview
-    avatarFile = null; // Reset file đã chọn
+    avatarPreview.value = user.value.photo || defaultAvatar;
+    avatarFile = null; // Reset file khi sync
   }
 };
 
-// Trigger click input file avatar
-const triggerAvatarUpload = () => {
-    avatarInput.value?.click();
-}
-
-// Xử lý khi chọn file avatar mới
+// Avatar Methods
+const triggerAvatarUpload = () => avatarInput.value?.click();
 const previewAvatar = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
-        avatarFile = file; // Lưu file lại
+        avatarFile = file;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            avatarPreview.value = e.target.result; // Hiển thị preview
-        };
+        reader.onload = (e) => avatarPreview.value = e.target.result;
         reader.readAsDataURL(file);
     } else {
         avatarFile = null;
@@ -333,34 +365,22 @@ const previewAvatar = (event) => {
     }
 }
 
-// Cập nhật thông tin profile
+// Update Profile
 const updateProfile = async () => {
   const { valid } = await profileForm.value.validate();
   if (!valid || !isProfileChanged.value) return;
-
   profileLoading.value = true;
   profileMessage.value.text = '';
-
   try {
-      // TODO: Xử lý upload avatarFile lên server nếu có
-      // 1. Upload avatarFile -> Nhận URL mới
-      // 2. Gửi URL mới này cùng profileData
-      let photoUrl = user.value?.photo; // Giữ ảnh cũ nếu không đổi
-      // if (avatarFile) {
-      //     photoUrl = await uploadAvatarToServer(avatarFile); // Hàm upload giả định
-      // }
-
+    // TODO: Implement avatar upload if needed
     const updatedUserData = await userService.updateMyProfile({
       fullname: profileData.value.fullname,
       phoneNumber: profileData.value.phoneNumber,
-      photo: photoUrl, // Gửi URL ảnh (nếu có thay đổi)
+      // photo: photoUrl,
     });
-    // Cập nhật lại user trong store (quan trọng)
     authStore.user = { ...authStore.user, ...updatedUserData };
     profileMessage.value = { type: 'success', text: 'Cập nhật hồ sơ thành công!' };
-    avatarFile = null; // Reset file sau khi cập nhật thành công
-    // syncProfileData(); // Đồng bộ lại form (không cần thiết vì user store đã cập nhật)
-
+    avatarFile = null;
   } catch (error) {
     profileMessage.value = { type: 'error', text: error.message || 'Lỗi cập nhật hồ sơ.' };
   } finally {
@@ -368,53 +388,112 @@ const updateProfile = async () => {
   }
 };
 
-// Đổi mật khẩu
+// Change Password
 const changePassword = async () => {
   const { valid } = await passwordForm.value.validate();
   if (!valid) return;
-
   passwordLoading.value = true;
   passwordMessage.value.text = '';
-
   try {
     await userService.changeMyPassword({
       oldPassword: passwordData.value.oldPassword,
       newPassword: passwordData.value.newPassword,
     });
     passwordMessage.value = { type: 'success', text: 'Đổi mật khẩu thành công!' };
-    // Reset form
     passwordForm.value.reset();
+    passwordData.value = { oldPassword: '', newPassword: '', confirmNewPassword: ''};
   } catch (error) {
-    passwordMessage.value = { type: 'error', text: error.message || 'Lỗi đổi mật khẩu.' };
+    passwordMessage.value = { type: 'error', text: error.response?.data?.message || error.message || 'Lỗi đổi mật khẩu.' };
   } finally {
     passwordLoading.value = false;
   }
 };
 
+// --- Wishlist Methods ---
+const fetchWishlist = async () => {
+  wishlistLoading.value = true;
+  wishlistError.value = false;
+  wishlistErrorMessage.value = '';
+  try {
+    // Gọi API từ wishlistService (đã import ở trên)
+    const data = await wishlistService.getMyWishlist();
+    wishlistItems.value = data;
+    console.log('Fetched wishlist:', data); // Log để kiểm tra
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    wishlistError.value = true;
+    wishlistErrorMessage.value = error.response?.data?.message || error.message || 'Lỗi tải danh sách yêu thích.';
+    wishlistItems.value = []; // Reset list khi lỗi
+  } finally {
+    wishlistLoading.value = false;
+  }
+};
+
+const removeFromWishlist = async (variantId, productName) => {
+    if (removingWishlistItemId.value) return; // Tránh click nhiều lần
+    removingWishlistItemId.value = variantId;
+    try {
+        // Gọi store action để xóa (store sẽ gọi API)
+        await wishlistStore.removeFavorite(variantId);
+        // Cập nhật lại list trên UI (lọc bỏ item vừa xóa)
+        wishlistItems.value = wishlistItems.value.filter(item => item.variant.id !== variantId);
+        showSnackbar(`Đã xóa "${productName}" khỏi danh sách yêu thích.`, 'info');
+    } catch (error) {
+        console.error("Error removing from wishlist:", error);
+        showSnackbar(error.message || 'Lỗi xóa sản phẩm.', 'error');
+    } finally {
+        removingWishlistItemId.value = null; // Reset loading state
+    }
+};
+
+// Helper để đi đến trang chi tiết sản phẩm
+const goToProduct = (productId) => {
+    if (productId) {
+        router.push({ name: 'productDetail', params: { id: productId } });
+    }
+};
+
+// Helper format tiền tệ (cần thiết cho wishlist)
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || value < 0) return 'Liên hệ';
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+};
+
+
 // --- Lifecycle Hooks ---
 onMounted(() => {
-  if (authStore.user) {
-    syncProfileData();
+  syncProfileData();
+  // Không fetch wishlist ngay khi mount, chỉ fetch khi tab được chọn
+});
+
+// Watch for changes in user store data
+watch(() => authStore.user, (newUser, oldUser) => {
+    if (newUser && JSON.stringify(newUser) !== JSON.stringify(oldUser)) {
+        syncProfileData();
+    }
+}, { deep: true });
+
+// --- Watch activeTab để fetch wishlist khi cần ---
+watch(activeTab, (newTab) => {
+  // Chỉ fetch khi chuyển sang tab 'wishlist' VÀ chưa có dữ liệu HOẶC chưa từng bị lỗi
+  if (newTab === 'wishlist' && !wishlistLoading.value && (wishlistItems.value.length === 0 && !wishlistError.value)) {
+    fetchWishlist();
   }
 });
 
-// Theo dõi nếu user trong store thay đổi (ví dụ sau khi fetchUser hoàn tất)
-watch(() => authStore.user, (newUser) => {
-    if (newUser) {
-        syncProfileData();
-    }
-}, { immediate: true }); // immediate: true để chạy lần đầu
-
-// Menu items cho profile page
+// --- Menu items ---
 const profileMenuItems = ref([
     { text: 'Thông tin tài khoản', icon: 'mdi-account-details-outline', value: 'info' },
     { text: 'Đổi mật khẩu', icon: 'mdi-lock-reset', value: 'password' },
     { text: 'Lịch sử đơn hàng', icon: 'mdi-receipt-text-clock-outline', value: 'orders' },
-    // Thêm các mục khác nếu cần (ví dụ: địa chỉ, thông báo,...)
+    { text: 'Danh sách yêu thích', icon: 'mdi-heart-outline', value: 'wishlist' }, // Giữ nguyên
 ]);
 
 </script>
 
 <style scoped>
-/* Có thể thêm style nếu cần */
+/* Thêm style cho wishlist item khi hover (tùy chọn) */
+.wishlist-item-hover:hover {
+  background-color: rgba(0, 0, 0, 0.03); /* Màu nền nhẹ khi hover */
+}
 </style>

@@ -9,9 +9,8 @@ const userService = {
    */
   updateMyProfile: async (profileData) => {
     try {
-      // Endpoint này cần được định nghĩa ở backend
-      // Có thể là /users/me/profile hoặc /customers/me tùy cấu trúc
-      const response = await api.put('/users/me/profile', profileData);
+      // SỬA Ở ĐÂY: Đổi đường dẫn API
+      const response = await api.put('/customers/me/profile', profileData);
       return response.data;
     } catch (error) {
       console.error('Update profile failed:', error.response?.data || error.message);

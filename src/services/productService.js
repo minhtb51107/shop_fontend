@@ -98,6 +98,26 @@ const productService = {
       throw error;
     }
   },
+
+  // ==================================================
+  // ===             PHẦN MỚI THÊM VÀO             ===
+  // ==================================================
+  /**
+   * Lấy tất cả banner cho slideshow.
+   * @returns {Promise<Array<Object>>} Danh sách banner ({ id, src, title })
+   */
+  getAllBanners: async () => {
+    try {
+      // Giả định endpoint là '/banners' hoặc '/api/v1/banners'
+      const response = await api.get('/banners'); 
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching banners:', error);
+      throw error;
+    }
+  },
+  // ==================================================
+
   // Thêm các hàm khác sau này: createProduct, updateProduct, deleteProduct, getProductVariants,...
 };
 

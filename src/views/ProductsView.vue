@@ -96,7 +96,13 @@
               Thêm vào giỏ
             </v-btn>
             <v-spacer></v-spacer>
-            <v-btn icon color="grey-lighten-1" size="small">
+            <v-btn 
+              icon 
+              color="grey-lighten-1" 
+              size="small" 
+              @click.stop="toggleWishlist(product)"
+              title="Thêm vào yêu thích"
+            >
               <v-icon>mdi-heart-outline</v-icon>
             </v-btn>
           </v-card-actions>
@@ -140,12 +146,12 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router'; // <-- THÊM useRoute
+import { useRouter, useRoute } from 'vue-router'; 
 import productService from '@/services/productService';
 import { useCartStore } from '@/stores/cart';
 import _ from 'lodash';
 
-const route = useRoute(); // <-- THÊM DÒNG NÀY
+const route = useRoute(); 
 const router = useRouter();
 const cartStore = useCartStore();
 const products = ref([]);
@@ -178,9 +184,9 @@ const sortOption = ref(sortOptions.value[0].value);
 
 // --- State cho Categories và Brands ---
 const categories = ref([]);
-const loadingCategories = ref(true); // Thêm loading state
+const loadingCategories = ref(true); 
 const brands = ref([]);
-const loadingBrands = ref(true); // Thêm loading state
+const loadingBrands = ref(true); 
 
 // --- HÀM FETCH DỮ LIỆU ---
 const fetchProducts = async () => {
@@ -200,9 +206,7 @@ const fetchProducts = async () => {
 
      const pageData = await productService.getAllProducts(cleanedParams);
 
-     // **Cập nhật mapping:** Ưu tiên lấy giá và ảnh từ API.
-     // Thay thế đoạn map cũ bằng:
-products.value = pageData.content; // Gán trực tiếp
+     products.value = pageData.content; 
      totalItems.value = pageData.totalElements;
    } catch (err) {
      error.value = true;
@@ -219,11 +223,10 @@ products.value = pageData.content; // Gán trực tiếp
 const fetchCategories = async () => {
     loadingCategories.value = true;
     try {
-        // Giả sử productService có hàm getAllCategories trả về [{id: 1, name: 'Laptop'}, ...]
         categories.value = await productService.getAllCategories();
     } catch (error) {
         console.error("Error fetching categories:", error);
-        categories.value = []; // Đặt mảng rỗng nếu lỗi
+        categories.value = []; 
         showSnackbar("Không thể tải danh mục.", "error");
     } finally {
         loadingCategories.value = false;
@@ -234,11 +237,10 @@ const fetchCategories = async () => {
 const fetchBrands = async () => {
     loadingBrands.value = true;
     try {
-        // Giả sử productService có hàm getAllBrands trả về [{id: 1, name: 'Brand A'}, ...]
         brands.value = await productService.getAllBrands();
     } catch (error) {
         console.error("Error fetching brands:", error);
-        brands.value = []; // Đặt mảng rỗng nếu lỗi
+        brands.value = []; 
         showSnackbar("Không thể tải thương hiệu.", "error");
     } finally {
         loadingBrands.value = false;
@@ -273,27 +275,29 @@ const handlePageChange = (newPage) => {
 };
 
 // --- GỌI API KHI MOUNT ---
-// --- GỌI API KHI MOUNT ---
 onMounted(() => {
-    // --- THÊM LOGIC NÀY ---
-    // Đọc categoryId từ query param trên URL
     const queryCategoryId = route.query.categoryId;
     if (queryCategoryId) {
-        // Cập nhật state của bộ lọc
         filters.value.categoryId = parseInt(queryCategoryId, 10);
     }
-    // --- KẾT THÚC THÊM ---
-
-    fetchProducts(); // Bây giờ fetchProducts sẽ dùng categoryId (nếu có)
+    fetchProducts(); 
     fetchCategories();
     fetchBrands();
 });
 
 // --- CÁC HÀM TIỆN ÍCH KHÁC ---
+
+// ==================================================
+// ===         CẬP NHẬT HÀM formatCurrency        ===
+// ==================================================
 const formatCurrency = (value) => {
-  if (value === null || value === undefined || value === 0) return 'Liên hệ'; // Cập nhật điều kiện
+  // Chỉ trả về "Liên hệ" nếu giá là null hoặc undefined
+  if (value === null || value === undefined) return 'Liên hệ';
+  // Giá trị 0 vẫn sẽ được định dạng là "0 ₫"
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
+// ==================================================
+
 
 const showSnackbar = (text, color = 'success', showCartButton = false) => {
   snackbar.value.text = text;
@@ -309,8 +313,8 @@ const addToCart = (product) => {
        const itemToAdd = {
            id: product.variants?.[0]?.id || product.id,
            name: product.name,
-           price: product.price, // Giá đã được xác định ở fetchProducts
-           imageUrl: product.imageUrl // Ảnh đã được xác định
+           price: product.price, 
+           imageUrl: product.imageUrl 
        };
        cartStore.addItem(itemToAdd, 1);
        showSnackbar(`Đã thêm "${product.name}" vào giỏ hàng!`, 'success', true);
@@ -318,6 +322,21 @@ const addToCart = (product) => {
        showSnackbar('Không thể thêm sản phẩm.', 'error');
     }
 };
+
+// ==================================================
+// ===       HÀM MỚI CHO NÚT YÊU THÍCH          ===
+// ==================================================
+/**
+ * Xử lý khi nhấn nút yêu thích (Hiện tại chỉ thông báo)
+ * @param {object} product Sản phẩm
+ */
+const toggleWishlist = (product) => {
+  if (product) {
+    console.log("Toggle wishlist cho:", product.name);
+    showSnackbar(`Đã thêm "${product.name}" vào danh sách yêu thích!`, 'info');
+  }
+};
+// ==================================================
 
 </script>
 

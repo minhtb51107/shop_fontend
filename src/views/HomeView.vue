@@ -2,17 +2,21 @@
   <v-container>
     <v-row>
       <v-col cols="12">
-        <v-carousel cycle height="400" hide-delimiter-background show-arrows="hover">
+        <v-skeleton-loader v-if="loadingBanners" type="image" height="400"></v-skeleton-loader>
+        <v-carousel v-else-if="bannerItems.length > 0" cycle height="400" hide-delimiter-background show-arrows="hover">
           <v-carousel-item
             v-for="(item, i) in bannerItems"
             :key="i"
-            :src="item.src"
+            :src="item.src || item.imageUrl" 
             cover
           >
             <div class="d-flex fill-height justify-center align-center">
               </div>
           </v-carousel-item>
         </v-carousel>
+        <v-alert v-else type="info" variant="tonal" class="text-center">
+          Không tải được slideshow.
+        </v-alert>
       </v-col>
     </v-row>
 
@@ -81,7 +85,15 @@
            </v-card-text>
             <v-divider></v-divider>
            <v-card-actions class="pa-1 justify-end">
-              <v-btn icon color="grey-lighten-1" size="x-small"> <v-icon>mdi-heart-outline</v-icon> </v-btn>
+              <v-btn 
+                icon 
+                color="grey-lighten-1" 
+                size="x-small" 
+                @click.prevent="toggleWishlist(product)"
+                title="Thêm vào yêu thích"
+              > 
+                <v-icon>mdi-heart-outline</v-icon> 
+              </v-btn>
               <v-btn color="primary" variant="tonal" size="small" @click.prevent="addToCart(product)">
                    <v-icon start size="small">mdi-cart-plus</v-icon> Thêm
               </v-btn>
@@ -117,12 +129,9 @@ import productService from '@/services/productService';
 const cartStore = useCartStore();
 const snackbar = ref({ show: false, text: '', color: 'success', timeout: 4000, showCartButton: false });
 
-// Banner data (giữ nguyên hoặc fetch từ API)
-const bannerItems = ref([
-  { src: 'https://cdn.vuetifyjs.com/images/carousel/squirrel.jpg', title: 'Banner 1' },
-  { src: 'https://cdn.vuetifyjs.com/images/carousel/sky.jpg', title: 'Banner 2' },
-  { src: 'https://cdn.vuetifyjs.com/images/carousel/bird.jpg', title: 'Banner 3' },
-]);
+// Cập nhật: State cho Banner
+const bannerItems = ref([]);
+const loadingBanners = ref(true); // Thêm state loading
 
 // --- State cho Categories ---
 const allCategories = ref([]);
@@ -134,17 +143,37 @@ const displayedCategories = computed(() => allCategories.value.slice(0, 6));
 const newestProducts = ref([]);
 const loadingNewest = ref(true);
 
+// ==================================================
+// ===         HÀM MỚI ĐỂ LẤY BANNERS            ===
+// ==================================================
+const fetchBanners = async () => {
+    loadingBanners.value = true;
+    try {
+        // Giả sử API trả về mảng banner: [{ id: 1, src: 'url...', title: '...' }]
+        bannerItems.value = await productService.getAllBanners();
+    } catch (error) {
+        console.error("Error fetching banners:", error);
+        bannerItems.value = []; 
+        // Hiển thị dữ liệu mẫu nếu API lỗi (tùy chọn)
+        // bannerItems.value = [
+        //   { src: 'https://cdn.vuetifyjs.com/images/carousel/squirrel.jpg', title: 'Banner 1' },
+        //   { src: 'https://cdn.vuetifyjs.com/images/carousel/sky.jpg', title: 'Banner 2' },
+        // ];
+    } finally {
+        loadingBanners.value = false;
+    }
+};
+// ==================================================
+
+
 // --- HÀM LẤY CATEGORIES TỪ API ---
 const fetchCategories = async () => {
     loadingCategories.value = true;
     try {
-        // Giả sử productService có hàm getAllCategories() trả về [{ id: 1, name: 'Laptop' }, ...]
         allCategories.value = await productService.getAllCategories();
     } catch (error) {
         console.error("Error fetching categories:", error);
-        allCategories.value = []; // Đặt mảng rỗng nếu lỗi
-        // Có thể hiển thị thông báo lỗi nhỏ bằng snackbar nếu muốn
-        // showSnackbar("Không thể tải danh mục sản phẩm.", "error");
+        allCategories.value = []; 
     } finally {
         loadingCategories.value = false;
     }
@@ -154,16 +183,9 @@ const fetchCategories = async () => {
 const fetchNewestProducts = async () => {
     loadingNewest.value = true;
     try {
-        // Giả sử API getAllProducts hỗ trợ phân trang và sắp xếp
-        // Ví dụ: lấy 4 sản phẩm mới nhất (sắp xếp theo ID giảm dần)
         const params = { page: 0, size: 4, sort: 'id,desc' };
         const pageData = await productService.getAllProducts(params);
-
-        // **Cập nhật mapping:** Ưu tiên lấy giá và ảnh từ API nếu có.
-        // Đảm bảo cấu trúc dữ liệu trả về từ API của bạn (`pageData.content`)
-        // có chứa `price` và `imageUrl` hoặc các trường tương ứng như `variants` hoặc `images`.
-        // Thay thế đoạn map cũ bằng:
-newestProducts.value = pageData.content; // Gán trực tiếp nếu API trả đúng định dạng
+        newestProducts.value = pageData.content; 
     } catch (error) {
         console.error("Error fetching newest products:", error);
         newestProducts.value = [];
@@ -174,7 +196,7 @@ newestProducts.value = pageData.content; // Gán trực tiếp nếu API trả �
 
 // --- CÁC HÀM TIỆN ÍCH ---
 const formatCurrency = (value) => {
-  if (value === null || value === undefined) return 'Liên hệ'; // Hoặc 'N/A'
+  if (value === null || value === undefined) return 'Liên hệ'; // Giữ nguyên, đã cho phép giá 0
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
@@ -187,12 +209,11 @@ const showSnackbar = (text, color = 'success', showCartButton = false) => {
 
 const addToCart = (product) => {
    if (product) {
-       // Cần đảm bảo product có đủ thông tin cho cart store
        const itemToAdd = {
-             id: product.variants?.[0]?.id || product.id, // Lấy ID của variant nếu có
+             id: product.variants?.[0]?.id || product.id, 
              name: product.name,
-             price: product.price, // Giá đã được xác định ở fetchNewestProducts
-             imageUrl: product.imageUrl // Ảnh đã được xác định
+             price: product.price, 
+             imageUrl: product.imageUrl 
          };
     cartStore.addItem(itemToAdd, 1);
     showSnackbar(`Đã thêm "${product.name}" vào giỏ hàng!`, 'success', true);
@@ -201,22 +222,41 @@ const addToCart = (product) => {
   }
 };
 
+// ==================================================
+// ===       HÀM MỚI CHO NÚT YÊU THÍCH          ===
+// ==================================================
+/**
+ * Xử lý khi nhấn nút yêu thích (Hiện tại chỉ thông báo)
+ * @param {object} product Sản phẩm
+ */
+const toggleWishlist = (product) => {
+  if (product) {
+    // TODO: Triển khai logic thêm/xóa khỏi wishlist (cần Pinia store)
+    // Hiện tại chỉ hiển thị thông báo
+    console.log("Toggle wishlist cho:", product.name);
+    showSnackbar(`Đã thêm "${product.name}" vào danh sách yêu thích!`, 'info'); 
+    // Bạn có thể thay đổi màu 'info' thành màu khác
+  }
+};
+// ==================================================
+
+
 // Hàm lấy icon cho category
 const getCategoryIcon = (categoryName) => {
-    const nameLower = categoryName?.toLowerCase() || ''; // Thêm kiểm tra null/undefined
+    const nameLower = categoryName?.toLowerCase() || ''; 
     if (nameLower.includes('laptop')) return 'mdi-laptop';
     if (nameLower.includes('phone') || nameLower.includes('điện thoại')) return 'mdi-cellphone';
     if (nameLower.includes('tablet') || nameLower.includes('máy tính bảng')) return 'mdi-tablet-ipad';
     if (nameLower.includes('headphone') || nameLower.includes('tai nghe')) return 'mdi-headphones';
     if (nameLower.includes('watch') || nameLower.includes('đồng hồ')) return 'mdi-watch';
     if (nameLower.includes('accessory') || nameLower.includes('phụ kiện')) return 'mdi-usb-port';
-    return 'mdi-shape-outline'; // Icon mặc định
+    return 'mdi-shape-outline'; 
 }
 
 onMounted(() => {
+    fetchBanners(); // Cập nhật: Gọi hàm lấy banners
     fetchNewestProducts();
-    fetchCategories(); // Gọi hàm lấy categories thật
-    // TODO: Fetch Bestsellers, Promotions
+    fetchCategories(); 
 });
 </script>
 

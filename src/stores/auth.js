@@ -4,12 +4,19 @@ import { ref, computed } from 'vue';
 import authService from '@/services/authService';
 import api from '@/services/api'; // Import api instance để cập nhật header
 import router from '@/router'; // Import router để điều hướng
+import { useWishlistStore } from './wishlistStore'; // <-- THÊM IMPORT
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); // Thông tin người dùng { id, email, fullname, userType, roles, permissions }
   const accessToken = ref(localStorage.getItem('accessToken') || null);
   const refreshToken = ref(localStorage.getItem('refreshToken') || null);
   const returnUrl = ref(null); // Lưu lại URL người dùng muốn truy cập trước khi bị chuyển đến login
+  // Khởi tạo wishlist store sau khi authStore được định nghĩa hoàn toàn
+  // Lưu ý: Không thể dùng wishlistStore trực tiếp ở top level vì nó cần authStore
+  // Cách giải quyết là inject wishlistStore bên trong các action khi cần,
+  // Hoặc dùng một plugin Pinia (phức tạp hơn),
+  // Hoặc khởi tạo nó bên trong nhưng đảm bảo không tạo dependency cycle.
+  // Cách đơn giản nhất là gọi useWishlistStore() bên trong action khi cần.
 
   // --- Getters ---
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
@@ -28,7 +35,6 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = newRefreshToken;
     localStorage.setItem('accessToken', newAccessToken);
     localStorage.setItem('refreshToken', newRefreshToken);
-    // Cập nhật header mặc định cho các request sau này
     api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
   }
 
@@ -41,8 +47,10 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = null;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    // Xóa header Authorization
     delete api.defaults.headers.common['Authorization'];
+    // Gọi clearWishlist ở đây để đảm bảo wishlist cũng bị xóa khi auth data bị xóa
+    const wishlistStore = useWishlistStore();
+    wishlistStore.clearWishlist();
   }
 
   /**
@@ -50,18 +58,21 @@ export const useAuthStore = defineStore('auth', () => {
    * @param {object} credentials - { email, password }
    */
   async function login(credentials) {
+    const wishlistStore = useWishlistStore(); // <-- Lấy wishlist store ở đây
     try {
       const data = await authService.login(credentials);
       setTokens(data.accessToken, data.refreshToken);
-      // Sau khi có token, lấy thông tin user
-      await fetchUser();
-      // Điều hướng đến trang trước đó hoặc trang chủ
+      await fetchUser(); // Lấy thông tin user
+      // Chỉ fetch wishlist nếu fetchUser thành công (có user.value)
+      if(user.value) {
+        await wishlistStore.fetchWishlistIds(); // <-- GỌI FETCH WISHLIST
+      }
       router.push(returnUrl.value || '/');
-      returnUrl.value = null; // Reset returnUrl
+      returnUrl.value = null;
     } catch (error) {
-      clearAuthData(); // Xóa thông tin nếu đăng nhập thất bại
+      clearAuthData(); // Đã bao gồm clearWishlist()
       console.error('Login action failed:', error);
-      throw error; // Ném lỗi để component xử lý (hiển thị thông báo)
+      throw error;
     }
   }
 
@@ -72,11 +83,9 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(userData) {
     try {
       await authService.register(userData);
-      // Có thể tự động đăng nhập sau khi đăng ký thành công hoặc yêu cầu kích hoạt email
-      // Hiện tại chỉ điều hướng về trang đăng nhập và báo thành công
     } catch (error) {
       console.error('Register action failed:', error);
-      throw error; // Ném lỗi để component xử lý
+      throw error;
     }
   }
 
@@ -84,19 +93,19 @@ export const useAuthStore = defineStore('auth', () => {
    * Lấy thông tin người dùng từ API /auth/me.
    */
   async function fetchUser() {
-    if (!accessToken.value) return; // Không fetch nếu không có token
-
+    if (!accessToken.value) return;
     try {
-      // Đảm bảo header được set đúng trước khi gọi
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken.value}`;
       const userData = await authService.getCurrentUser();
       user.value = userData;
     } catch (error) {
        console.error('Fetch user failed:', error);
-       // Nếu lỗi (ví dụ: token hết hạn), thử refresh token
-       await attemptRefreshToken();
-       // Nếu refresh thành công, fetchUser sẽ được gọi lại trong attemptRefreshToken
-       // Nếu refresh thất bại, user sẽ bị logout
+       // Thử refresh token, nếu thất bại attemptRefreshToken sẽ tự clearAuthData
+       const refreshed = await attemptRefreshToken();
+       // Nếu refresh thành công, fetchUser đã được gọi lại bên trong attemptRefreshToken
+       if (!refreshed) {
+           throw error; // Ném lỗi gốc ra nếu refresh thất bại
+       }
     }
   }
 
@@ -104,15 +113,15 @@ export const useAuthStore = defineStore('auth', () => {
    * Xử lý đăng xuất.
    */
   async function logout() {
-    const currentRefreshToken = refreshToken.value; // Lưu lại refresh token trước khi xóa
-    clearAuthData(); // Xóa thông tin ở client ngay lập tức
-    router.push('/login'); // Điều hướng về trang đăng nhập
+    const currentRefreshToken = refreshToken.value;
+    const wishlistStore = useWishlistStore(); // <-- Lấy wishlist store
+    clearAuthData(); // Đã bao gồm clearWishlist()
+    router.push('/login');
     try {
       if(currentRefreshToken) {
-        await authService.logout(currentRefreshToken); // Gọi API để backend xử lý (nếu cần)
+        await authService.logout(currentRefreshToken);
       }
     } catch (error) {
-        // Lỗi từ API logout không quá nghiêm trọng vì client đã logout
       console.error('Logout API call failed, but client data cleared:', error);
     }
   }
@@ -121,24 +130,30 @@ export const useAuthStore = defineStore('auth', () => {
     * Cố gắng làm mới access token bằng refresh token.
     */
    async function attemptRefreshToken() {
+        const wishlistStore = useWishlistStore(); // <-- Lấy wishlist store
         if (!refreshToken.value) {
             console.log("No refresh token available, clearing auth data.");
-            clearAuthData(); // Không có refresh token, logout hẳn
-            return false; // Refresh thất bại
+            clearAuthData(); // Đã bao gồm clearWishlist()
+            return false;
         }
-
         try {
             console.log("Attempting to refresh token...");
             const data = await authService.refreshToken(refreshToken.value);
-            setTokens(data.accessToken, data.refreshToken); // Lưu token mới
+            setTokens(data.accessToken, data.refreshToken);
             console.log("Token refreshed successfully.");
-            await fetchUser(); // Lấy lại thông tin user với token mới
-            return true; // Refresh thành công
+            // Fetch lại user SAU KHI refresh thành công
+            await fetchUser();
+            // Fetch lại wishlist SAU KHI fetchUser thành công (đảm bảo user.value có)
+             if (user.value) {
+                await wishlistStore.fetchWishlistIds(); // <-- GỌI FETCH WISHLIST
+            }
+            return true;
         } catch (error) {
             console.error("Failed to refresh token, logging out:", error);
-            clearAuthData(); // Refresh thất bại (có thể do refresh token hết hạn), logout
-            router.push('/login'); // Chuyển về trang đăng nhập
-            return false; // Refresh thất bại
+            clearAuthData(); // Đã bao gồm clearWishlist()
+            // Không nên tự động push('/login') ở đây vì có thể gây vòng lặp vô hạn nếu API lỗi liên tục
+            // Interceptor hoặc nơi gọi attemptRefreshToken sẽ xử lý việc điều hướng
+            return false;
         }
     }
 
@@ -148,33 +163,53 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function checkAuthStatus() {
      console.log("Checking auth status...");
+     const wishlistStore = useWishlistStore(); // <-- Lấy wishlist store
     if (accessToken.value) {
-        console.log("Access token found, fetching user...");
-      await fetchUser(); // Nếu có access token, thử lấy thông tin user
-      // fetchUser sẽ tự xử lý refresh token nếu access token hết hạn
+        console.log("Access token found, attempting to fetch user...");
+        try {
+            await fetchUser(); // fetchUser sẽ tự xử lý refresh nếu cần
+            // Fetch wishlist chỉ khi fetchUser thành công VÀ user có giá trị
+            if (user.value) {
+                 console.log("User fetched successfully, fetching wishlist IDs...");
+                 await wishlistStore.fetchWishlistIds(); // <-- GỌI FETCH WISHLIST
+            } else {
+                 // Nếu fetchUser chạy xong nhưng user vẫn null (có thể do lỗi lạ), vẫn clear
+                 console.warn("fetchUser completed but user is still null. Clearing auth data.");
+                 clearAuthData(); // Đã bao gồm clearWishlist()
+            }
+        } catch (error) {
+             console.error("Failed initial auth check (fetchUser or refreshToken failed):", error);
+             // clearAuthData() đã được gọi bên trong attemptRefreshToken nếu lỗi refresh
+             // Hoặc nếu fetchUser lỗi mà không phải do token hết hạn (ví dụ lỗi mạng), cần clear ở đây
+             if (!accessToken.value) { // Kiểm tra lại nếu attemptRefreshToken đã clear token
+                 clearAuthData(); // Đảm bảo clear nếu có lỗi khác
+             }
+        }
     } else {
         console.log("No access token found.");
-        // Có thể thử refresh token nếu không có access token nhưng có refresh token
-        // await attemptRefreshToken();
-        clearAuthData(); // Đảm bảo trạng thái sạch nếu không có token nào
+        clearAuthData(); // Đã bao gồm clearWishlist()
     }
   }
 
   /**
    * Xử lý đăng nhập bằng Google.
-   * @param {string} idToken - ID Token từ Google
    */
   async function loginWithGoogle(idToken) {
+    const wishlistStore = useWishlistStore(); // <-- Lấy wishlist store
     try {
       const data = await authService.loginWithGoogle(idToken);
       setTokens(data.accessToken, data.refreshToken);
-      await fetchUser(); // Lấy thông tin user sau khi có token
-      router.push(returnUrl.value || '/'); // Điều hướng
+      await fetchUser();
+       // Chỉ fetch wishlist nếu fetchUser thành công
+       if(user.value) {
+           await wishlistStore.fetchWishlistIds(); // <-- GỌI FETCH WISHLIST
+       }
+      router.push(returnUrl.value || '/');
       returnUrl.value = null;
     } catch (error) {
-      clearAuthData();
+      clearAuthData(); // Đã bao gồm clearWishlist()
       console.error('Google login action failed:', error);
-      throw error; // Ném lỗi để component xử lý
+      throw error;
     }
   }
 
@@ -191,8 +226,9 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     logout,
     checkAuthStatus,
-    attemptRefreshToken, // Expose hàm này để interceptor có thể gọi
-    setTokens, // Expose để interceptor cập nhật token sau khi refresh
-    clearAuthData // Expose để interceptor logout nếu refresh thất bại
+    attemptRefreshToken,
+    setTokens,
+    clearAuthData,
+    loginWithGoogle // Thêm hàm này vào return
   };
 });
