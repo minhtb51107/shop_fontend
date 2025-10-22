@@ -25,14 +25,14 @@
              <v-carousel-item v-for="(image, i) in product.images" :key="i" :src="image.imageUrl || defaultProductImage" cover></v-carousel-item>
            </v-carousel>
            <v-img v-else :src="getDefaultImage(product.images)" height="400px" cover class="rounded"></v-img>
-         </v-card>
-         <v-row v-if="product.images && product.images.length > 1" dense class="mt-2">
-             <v-col v-for="(image, i) in product.images" :key="`thumb-${i}`" cols="3" md="2">
-                 <v-card flat border :class="{ 'border-primary elevation-2': i === currentImageIndex }" @click="currentImageIndex = i" class="cursor-pointer">
-                     <v-img :src="image.imageUrl || defaultProductImage" height="60" cover></v-img>
-                 </v-card>
-             </v-col>
-         </v-row>
+        </v-card>
+        <v-row v-if="product.images && product.images.length > 1" dense class="mt-2">
+           <v-col v-for="(image, i) in product.images" :key="`thumb-${i}`" cols="3" md="2">
+             <v-card flat border :class="{ 'border-primary elevation-2': i === currentImageIndex }" @click="currentImageIndex = i" class="cursor-pointer">
+               <v-img :src="image.imageUrl || defaultProductImage" height="60" cover></v-img>
+             </v-card>
+           </v-col>
+        </v-row>
       </v-col>
 
       <v-col cols="12" md="6">
@@ -59,9 +59,9 @@
             <v-col cols="12" sm="6">
               <v-btn color="primary" block size="large" prepend-icon="mdi-cart-plus" @click="addToCart(product, quantity)">Thêm vào giỏ</v-btn>
             </v-col>
-              <v-col cols="12" sm="6">
-                <v-btn color="red" variant="outlined" block size="large" prepend-icon="mdi-credit-card-outline">Mua ngay</v-btn>
-              </v-col>
+            <v-col cols="12" sm="6">
+              <v-btn color="red" variant="outlined" block size="large" prepend-icon="mdi-credit-card-outline">Mua ngay</v-btn>
+            </v-col>
           </v-row>
 
           <div class="mt-5 text-center">
@@ -72,225 +72,225 @@
               @click="toggleFavorite(product)"
               :loading="isTogglingFavorite[getDefaultVariantId(product.variants)]"
               :disabled="!getDefaultVariantId(product.variants)"
-            >
+              class="me-2" >
               {{ wishlistStore.isFavorite(getDefaultVariantId(product.variants)) ? 'Đã yêu thích' : 'Thêm vào yêu thích' }}
             </v-btn>
 
-             <v-btn variant="text" prepend-icon="mdi-share-variant-outline" color="grey-darken-1" @click="shareProduct">
-               Chia sẻ
-             </v-btn>
-             <v-menu
-               v-model="shareMenu"
-               :close-on-content-click="false"
-               activator="parent"
-               location="top center"
-             >
-               <v-list density="compact" min-width="200">
-                 <v-list-item @click="copyLink">
-                   <template v-slot:prepend><v-icon icon="mdi-link-variant"></v-icon></template>
-                   <v-list-item-title>Copy đường dẫn</v-list-item-title>
-                 </v-list-item>
-                 <v-divider></v-divider>
-                 <v-list-item :href="facebookShareUrl" target="_blank" rel="noopener noreferrer">
-                   <template v-slot:prepend><v-icon icon="mdi-facebook" color="#1877F2"></v-icon></template>
-                   <v-list-item-title>Facebook</v-list-item-title>
-                 </v-list-item>
-                 <v-list-item :href="messengerShareUrl" target="_blank" rel="noopener noreferrer">
-                   <template v-slot:prepend><v-icon icon="mdi-facebook-messenger" color="#00B2FF"></v-icon></template>
-                   <v-list-item-title>Messenger</v-list-item-title>
+            <v-btn variant="text" prepend-icon="mdi-share-variant-outline" color="grey-darken-1">
+              Chia sẻ
+              <v-menu
+                v-model="shareMenu"
+                :close-on-content-click="false"
+                activator="parent"
+                location="top center"
+              >
+                <v-list density="compact" min-width="200">
+                  <v-list-item @click="copyLink">
+                    <template v-slot:prepend><v-icon icon="mdi-link-variant"></v-icon></template>
+                    <v-list-item-title>Copy đường dẫn</v-list-item-title>
                   </v-list-item>
-               </v-list>
-             </v-menu>
-               </div>
-             </v-card>
-           </v-col>
+                  <v-divider></v-divider>
+                  <v-list-item :href="facebookShareUrl" target="_blank" rel="noopener noreferrer">
+                    <template v-slot:prepend><v-icon icon="mdi-facebook" color="#1877F2"></v-icon></template>
+                    <v-list-item-title>Facebook</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item :href="messengerShareUrl" target="_blank" rel="noopener noreferrer">
+                    <template v-slot:prepend><v-icon icon="mdi-facebook-messenger" color="#00B2FF"></v-icon></template>
+                    <v-list-item-title>Messenger</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </v-btn>
+          </div>
+        </v-card>
+      </v-col>
 
       <v-col cols="12" class="mt-8" id="reviews-section"> <v-card flat border>
-           <v-tabs v-model="tab" bg-color="primary" dark grow>
-             <v-tab value="description">Mô Tả Chi Tiết</v-tab>
-             <v-tab value="specs">Thông Số Kỹ Thuật</v-tab>
-             <v-tab value="reviews">
-               Đánh Giá ({{ reviewTotalElements }}) </v-tab>
-           </v-tabs>
-           <v-card-text class="pa-0">
-             <v-window v-model="tab">
-               <v-window-item value="description">
-                 <div class="pa-4 text-body-1">
-                    <p>{{ product.description || 'Sản phẩm chưa có mô tả chi tiết.' }}</p>
-                    <div v-if="product.specs && Object.keys(product.specs).length > 0" class="mt-4">
-                       <h4 class="text-subtitle-1 font-weight-medium mb-2">Thông số nổi bật:</h4>
-                       <ul>
-                           <li v-for="(value, key) in product.specs" :key="`desc-${key}`" class="mb-1">
-                               <strong class="text-capitalize">{{ formatSpecKey(key) }}:</strong> {{ value }}
-                           </li>
-                       </ul>
-                   </div>
-                 </div>
-               </v-window-item>
-               <v-window-item value="specs">
-                 <v-table density="compact" class="ma-4">
-                   <thead><tr><th class="text-left font-weight-bold">Thông số</th><th class="text-left font-weight-bold">Giá trị</th></tr></thead>
-                   <tbody>
-                     <tr v-if="product.specs && Object.keys(product.specs).length > 0" v-for="(value, key) in product.specs" :key="key">
-                       <td class="text-capitalize">{{ formatSpecKey(key) }}</td><td>{{ value }}</td>
-                     </tr>
-                     <tr v-if="!product.specs || Object.keys(product.specs).length === 0">
-                       <td colspan="2" class="text-center text-grey">Chưa có thông số kỹ thuật chi tiết.</td>
-                     </tr>
-                   </tbody>
-                 </v-table>
-               </v-window-item>
+          <v-tabs v-model="tab" bg-color="primary" dark grow>
+            <v-tab value="description">Mô Tả Chi Tiết</v-tab>
+            <v-tab value="specs">Thông Số Kỹ Thuật</v-tab>
+            <v-tab value="reviews">
+              Đánh Giá ({{ reviewTotalElements }}) </v-tab>
+          </v-tabs>
+          <v-card-text class="pa-0">
+            <v-window v-model="tab">
+              <v-window-item value="description">
+                <div class="pa-4 text-body-1">
+                  <p>{{ product.description || 'Sản phẩm chưa có mô tả chi tiết.' }}</p>
+                  <div v-if="product.specs && Object.keys(product.specs).length > 0" class="mt-4">
+                     <h4 class="text-subtitle-1 font-weight-medium mb-2">Thông số nổi bật:</h4>
+                     <ul>
+                       <li v-for="(value, key) in product.specs" :key="`desc-${key}`" class="mb-1">
+                         <strong class="text-capitalize">{{ formatSpecKey(key) }}:</strong> {{ value }}
+                       </li>
+                     </ul>
+                  </div>
+                </div>
+              </v-window-item>
+              <v-window-item value="specs">
+                <v-table density="compact" class="ma-4">
+                  <thead><tr><th class="text-left font-weight-bold">Thông số</th><th class="text-left font-weight-bold">Giá trị</th></tr></thead>
+                  <tbody>
+                    <tr v-if="product.specs && Object.keys(product.specs).length > 0" v-for="(value, key) in product.specs" :key="key">
+                      <td class="text-capitalize">{{ formatSpecKey(key) }}</td><td>{{ value }}</td>
+                    </tr>
+                    <tr v-if="!product.specs || Object.keys(product.specs).length === 0">
+                      <td colspan="2" class="text-center text-grey">Chưa có thông số kỹ thuật chi tiết.</td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </v-window-item>
 
-               <v-window-item value="reviews">
-                 <div class="pa-4">
-                   <div v-if="authStore.isAuthenticated" class="mb-8">
-                     <h3 class="text-h6 mb-3">Viết đánh giá của bạn</h3>
-                     <v-form ref="newReviewForm" @submit.prevent="submitReview">
-                       <v-rating
-                         v-model="newReviewRating"
-                         hover
-                         clearable
-                         color="amber"
-                         size="large"
-                         class="mb-3"
-                         label="Chọn số sao *"
-                       ></v-rating>
-                       <v-textarea
-                         v-model="newReviewComment"
-                         label="Nhận xét của bạn (tùy chọn)"
-                         variant="outlined"
-                         rows="3"
-                         counter
-                         maxlength="1000"
-                         auto-grow
-                       ></v-textarea>
-                       <v-alert
-                         v-if="reviewSubmitMessage.text"
-                         :type="reviewSubmitMessage.type"
-                         density="compact"
-                         variant="tonal"
-                         closable
-                         class="my-3"
-                         @click:close="reviewSubmitMessage.text = ''"
-                       >
-                         {{ reviewSubmitMessage.text }}
-                       </v-alert>
-                       <v-btn
-                         type="submit"
-                         color="primary"
-                         :loading="submittingReview"
-                         :disabled="submittingReview || !newReviewRating || newReviewRating === 0"
-                         class="mt-2"
-                         variant="elevated"
-                       >
-                         Gửi đánh giá
-                       </v-btn>
-                     </v-form>
-                     <v-divider class="my-6"></v-divider>
-                   </div>
-                   <div v-else class="mb-6 text-center text-body-2 text-grey">
-                       Vui lòng <router-link :to="{ name: 'login', query: { redirect: route.fullPath } }">đăng nhập</router-link> để gửi đánh giá.
-                   </div>
-                   <h3 class="text-h6 mb-4">Tất cả đánh giá ({{ reviewTotalElements }})</h3>
+              <v-window-item value="reviews">
+                <div class="pa-4">
+                  <div v-if="authStore.isAuthenticated" class="mb-8">
+                    <h3 class="text-h6 mb-3">Viết đánh giá của bạn</h3>
+                    <v-form ref="newReviewForm" @submit.prevent="submitReview">
+                      <v-rating
+                        v-model="newReviewRating"
+                        hover
+                        clearable
+                        color="amber"
+                        size="large"
+                        class="mb-3"
+                        label="Chọn số sao *"
+                      ></v-rating>
+                      <v-textarea
+                        v-model="newReviewComment"
+                        label="Nhận xét của bạn (tùy chọn)"
+                        variant="outlined"
+                        rows="3"
+                        counter
+                        maxlength="1000"
+                        auto-grow
+                      ></v-textarea>
+                      <v-alert
+                        v-if="reviewSubmitMessage.text"
+                        :type="reviewSubmitMessage.type"
+                        density="compact"
+                        variant="tonal"
+                        closable
+                        class="my-3"
+                        @click:close="reviewSubmitMessage.text = ''"
+                      >
+                        {{ reviewSubmitMessage.text }}
+                      </v-alert>
+                      <v-btn
+                        type="submit"
+                        color="primary"
+                        :loading="submittingReview"
+                        :disabled="submittingReview || !newReviewRating || newReviewRating === 0"
+                        class="mt-2"
+                        variant="elevated"
+                      >
+                        Gửi đánh giá
+                      </v-btn>
+                    </v-form>
+                    <v-divider class="my-6"></v-divider>
+                  </div>
+                  <div v-else class="mb-6 text-center text-body-2 text-grey">
+                     Vui lòng <router-link :to="{ name: 'login', query: { redirect: route.fullPath } }">đăng nhập</router-link> để gửi đánh giá.
+                  </div>
+                  <h3 class="text-h6 mb-4">Tất cả đánh giá ({{ reviewTotalElements }})</h3>
 
-                   <div v-if="reviewsLoading" class="text-center pa-5">
-                     <v-progress-circular indeterminate color="primary"></v-progress-circular>
-                     <p class="mt-3 text-grey">Đang tải đánh giá...</p>
-                   </div>
-                   <v-alert v-else-if="reviewsError" type="error" variant="tonal" dense class="mb-4">
-                     {{ reviewsErrorMessage }}
-                   </v-alert>
-                   <div v-else-if="!reviews || reviews.length === 0" class="text-center text-grey pa-5">
-                     <v-icon size="48" class="mb-2">mdi-comment-off-outline</v-icon><br>
-                     Chưa có đánh giá nào cho sản phẩm này.
-                   </div>
-                   <div v-else>
-                     <v-list lines="three" class="pa-0 bg-transparent"> <template v-for="(review, index) in reviews" :key="review.id">
-                         <v-list-item class="px-0 py-2"> <template v-slot:prepend>
-                             <v-avatar color="grey-lighten-2" size="40" class="me-3">
-                               <v-icon icon="mdi-account"></v-icon>
-                               </v-avatar>
-                           </template>
+                  <div v-if="reviewsLoading" class="text-center pa-5">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                    <p class="mt-3 text-grey">Đang tải đánh giá...</p>
+                  </div>
+                  <v-alert v-else-if="reviewsError" type="error" variant="tonal" dense class="mb-4">
+                    {{ reviewsErrorMessage }}
+                  </v-alert>
+                  <div v-else-if="!reviews || reviews.length === 0" class="text-center text-grey pa-5">
+                    <v-icon size="48" class="mb-2">mdi-comment-off-outline</v-icon><br>
+                    Chưa có đánh giá nào cho sản phẩm này.
+                  </div>
+                  <div v-else>
+                    <v-list lines="three" class="pa-0 bg-transparent"> <template v-for="(review, index) in reviews" :key="review.id">
+                        <v-list-item class="px-0 py-2"> <template v-slot:prepend>
+                            <v-avatar color="grey-lighten-2" size="40" class="me-3">
+                              <v-icon icon="mdi-account"></v-icon>
+                            </v-avatar>
+                          </template>
 
-                           <v-list-item-title class="font-weight-medium d-flex align-center mb-1">
-                             <span>{{ review.customerName }}</span>
-                             <v-chip
-                               v-if="review.verifiedPurchase"
-                               color="teal-lighten-4"
-                               text-color="teal-darken-2"
-                               label
-                               size="x-small"
-                               class="ms-2 font-weight-medium"
-                               prepend-icon="mdi-check-decagram"
-                               variant="flat"
-                              >
-                               Đã mua hàng
-                              </v-chip>
-                           </v-list-item-title>
+                          <v-list-item-title class="font-weight-medium d-flex align-center mb-1">
+                            <span>{{ review.customerName }}</span>
+                            <v-chip
+                              v-if="review.verifiedPurchase"
+                              color="teal-lighten-4"
+                              text-color="teal-darken-2"
+                              label
+                              size="x-small"
+                              class="ms-2 font-weight-medium"
+                              prepend-icon="mdi-check-decagram"
+                              variant="flat"
+                            >
+                              Đã mua hàng
+                            </v-chip>
+                          </v-list-item-title>
 
-                           <v-list-item-subtitle class="d-flex align-center">
-                             <v-rating
-                               :model-value="review.rating"
-                               color="amber"
-                               density="compact"
-                               readonly
-                               size="x-small"
-                               half-increments
-                               class="me-2"
-                             ></v-rating>
-                             <span class="text-caption text-medium-emphasis">{{ formatRelativeTime(review.createdAt) }}</span>
-                           </v-list-item-subtitle>
+                          <v-list-item-subtitle class="d-flex align-center">
+                            <v-rating
+                              :model-value="review.rating"
+                              color="amber"
+                              density="compact"
+                              readonly
+                              size="x-small"
+                              half-increments
+                              class="me-2"
+                            ></v-rating>
+                            <span class="text-caption text-medium-emphasis">{{ formatRelativeTime(review.createdAt) }}</span>
+                          </v-list-item-subtitle>
 
-                           <p class="text-body-2 mt-2" v-if="review.comment" style="white-space: pre-wrap;">{{ review.comment }}</p>
+                          <p class="text-body-2 mt-2" v-if="review.comment" style="white-space: pre-wrap;">{{ review.comment }}</p>
 
-                         </v-list-item>
-                         <v-divider v-if="index < reviews.length - 1" class="my-1"></v-divider>
-                       </template>
-                     </v-list>
+                        </v-list-item>
+                        <v-divider v-if="index < reviews.length - 1" class="my-1"></v-divider>
+                      </template>
+                    </v-list>
 
-                     <v-pagination
-                       v-if="reviewTotalPages > 1"
-                       v-model="reviewPage"
-                       :length="reviewTotalPages"
-                       :total-visible="5"
-                       @update:modelValue="fetchReviews"
-                       density="compact"
-                       rounded="circle"
-                       class="mt-6"
-                       active-color="primary"
-                     ></v-pagination>
-                   </div>
+                    <v-pagination
+                      v-if="reviewTotalPages > 1"
+                      v-model="reviewPage"
+                      :length="reviewTotalPages"
+                      :total-visible="5"
+                      @update:modelValue="fetchReviews"
+                      density="compact"
+                      rounded="circle"
+                      class="mt-6"
+                      active-color="primary"
+                    ></v-pagination>
+                  </div>
 
-                 </div>
-               </v-window-item>
-               </v-window>
-           </v-card-text>
-         </v-card>
-       </v-col>
+                </div>
+              </v-window-item>
+            </v-window>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
       <v-col cols="12" class="mt-10">
         <h2 class="text-h5 font-weight-medium mb-4">Sản Phẩm Tương Tự</h2>
          <v-row v-if="loadingRelated"><v-col v-for="n in 4" :key="`rel-sk-${n}`" cols="12" sm="6" md="3"><v-skeleton-loader type="image, list-item-two-line, actions"></v-skeleton-loader></v-col></v-row>
          <v-row v-else-if="relatedProducts.length > 0">
            <v-col v-for="related in relatedProducts" :key="related.id" cols="12" sm="6" md="3">
-              <v-card class="mx-auto my-2 fill-height d-flex flex-column" hover :to="{ name: 'productDetail', params: { id: related.id } }">
-                <v-img height="150" :src="getDefaultImage(related.images)" cover></v-img>
-                <v-card-title class="pt-3 pb-1 text-subtitle-2 font-weight-medium">{{ related.name }}</v-card-title>
-                <v-card-subtitle class="pb-2 text-caption">{{ related.brand?.name || 'N/A' }}</v-card-subtitle>
-                <v-card-text class="flex-grow-1 py-0"><p class="text-body-2 font-weight-bold text-red">{{ formatCurrency(getDefaultPrice(related.variants)) }}</p></v-card-text>
-                <v-divider></v-divider>
-                <v-card-actions class="pa-1 justify-end">
-                  <v-btn icon :color="wishlistStore.isFavorite(getDefaultVariantId(related.variants)) ? 'red' : 'grey-lighten-1'" size="x-small" @click.prevent="toggleFavorite(related)" :loading="isTogglingFavorite[getDefaultVariantId(related.variants)]" :disabled="!getDefaultVariantId(related.variants)">
-                    <v-icon>{{ wishlistStore.isFavorite(getDefaultVariantId(related.variants)) ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-                  </v-btn>
-                  <v-btn color="primary" variant="tonal" size="small" @click.prevent="addToCart(related, 1)">
-                      <v-icon start size="small">mdi-cart-plus</v-icon> Thêm
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-col>
-          </v-row>
-          <v-row v-else><v-col class="text-center text-grey">Không tìm thấy sản phẩm tương tự.</v-col></v-row>
+             <v-card class="mx-auto my-2 fill-height d-flex flex-column" hover :to="{ name: 'productDetail', params: { id: related.id } }">
+               <v-img height="150" :src="getDefaultImage(related.images)" cover></v-img>
+               <v-card-title class="pt-3 pb-1 text-subtitle-2 font-weight-medium">{{ related.name }}</v-card-title>
+               <v-card-subtitle class="pb-2 text-caption">{{ related.brand?.name || 'N/A' }}</v-card-subtitle>
+               <v-card-text class="flex-grow-1 py-0"><p class="text-body-2 font-weight-bold text-red">{{ formatCurrency(getDefaultPrice(related.variants)) }}</p></v-card-text>
+               <v-divider></v-divider>
+               <v-card-actions class="pa-1 justify-end">
+                 <v-btn icon :color="wishlistStore.isFavorite(getDefaultVariantId(related.variants)) ? 'red' : 'grey-lighten-1'" size="x-small" @click.prevent="toggleFavorite(related)" :loading="isTogglingFavorite[getDefaultVariantId(related.variants)]" :disabled="!getDefaultVariantId(related.variants)">
+                   <v-icon>{{ wishlistStore.isFavorite(getDefaultVariantId(related.variants)) ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+                 </v-btn>
+                 <v-btn color="primary" variant="tonal" size="small" @click.prevent="addToCart(related, 1)">
+                   <v-icon start size="small">mdi-cart-plus</v-icon> Thêm
+                 </v-btn>
+               </v-card-actions>
+             </v-card>
+           </v-col>
+         </v-row>
+         <v-row v-else><v-col class="text-center text-grey">Không tìm thấy sản phẩm tương tự.</v-col></v-row>
       </v-col>
     </v-row>
 
@@ -499,9 +499,9 @@ const submitReview = async () => {
     newReviewRating.value = null; // Reset về null
     newReviewComment.value = '';
     // Vuetify 3: reset validation
-     if (newReviewForm.value) {
-       newReviewForm.value.resetValidation();
-     }
+    if (newReviewForm.value) {
+      newReviewForm.value.resetValidation();
+    }
 
 
     reviewSubmitMessage.value = { type: 'success', text: 'Gửi đánh giá thành công! Cảm ơn bạn.' };
@@ -535,7 +535,7 @@ const formatRelativeTime = (dateTimeString) => {
   } catch (e) {
     console.error("Error formatting time:", e, dateTimeString);
     // Trả về phần ngày tháng nếu không parse được
-     try { return new Date(dateTimeString).toLocaleDateString('vi-VN'); } catch { return dateTimeString; }
+    try { return new Date(dateTimeString).toLocaleDateString('vi-VN'); } catch { return dateTimeString; }
   }
 };
 // ===========================================
@@ -561,14 +561,26 @@ const scrollToReviews = () => {
     });
 };
 
+// --- Hàm Copy Link (Đã thêm ở bước trước) ---
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(productUrl.value);
+    showSnackbar('Đã sao chép đường dẫn sản phẩm!', 'success');
+    shareMenu.value = false; // Đóng menu lại (tùy chọn)
+  } catch (err) {
+    console.error('Lỗi khi sao chép link:', err);
+    showSnackbar('Sao chép thất bại. Vui lòng thử lại.', 'error');
+  }
+};
+
 
 // --- Lifecycle Hooks ---
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
    if (productId.value) {
-       fetchProductDetail(productId.value);
+     fetchProductDetail(productId.value);
    } else {
-       loading.value = false; error.value = true; errorMessage.value = "ID sản phẩm không hợp lệ.";
+     loading.value = false; error.value = true; errorMessage.value = "ID sản phẩm không hợp lệ.";
    }
 });
 
