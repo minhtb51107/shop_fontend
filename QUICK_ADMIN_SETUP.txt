@@ -1,0 +1,65 @@
+========================================
+SETUP ADMIN - QUICK GUIDE
+========================================
+
+📁 GỬI CHO BẠN 4 FILES:
+1. setup_admin_permissions.sql - Setup permissions
+2. gan_role_admin.sql - Gán role ADMIN
+3. HUONG_DAN_SETUP_ADMIN.md - Hướng dẫn chi tiết
+4. QUICK_ADMIN_SETUP.txt - File này
+
+========================================
+HƯỚNG DẪN NHANH (4 BƯỚC):
+========================================
+
+1️⃣ GÁN ROLE ADMIN CHO USER (nếu cần)
+   → Mở file: gan_role_admin.sql
+   → Đọc và chọn CÁCH 1 hoặc CÁCH 2
+   → Thay email của bạn vào
+   → Execute (F5)
+
+2️⃣ MỞ DATABASE (pgAdmin/DBeaver)
+   → Chọn database "shop"
+
+3️⃣ CHẠY FILE SQL PERMISSIONS
+   → Mở file: setup_admin_permissions.sql
+   → Execute toàn bộ (F5)
+   → Kết quả: "72 permissions"
+
+4️⃣ LOGOUT & LOGIN LẠI
+   ⚠️ QUAN TRỌNG: Phải logout/login để lấy token mới!
+
+========================================
+TEST:
+========================================
+✅ Vào trang Tài khoản → Không lỗi 403
+✅ Vào trang Đơn mua hàng → Không lỗi 403
+✅ Có thể thêm/sửa/xóa dữ liệu
+
+========================================
+NẾU VẪN LỖI:
+========================================
+1. Kiểm tra đã LOGOUT & LOGIN chưa?
+2. Kiểm tra user có role ADMIN không?
+   SELECT * FROM employee_roles WHERE employee_id = YOUR_ID;
+3. Clear cache browser (Ctrl + Shift + Delete)
+
+========================================
+TẠO ADMIN MỚI (nếu cần):
+========================================
+Email: admin@shop.com
+Password: admin123
+
+SQL:
+INSERT INTO users (email, password, status) VALUES 
+('admin@shop.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ACTIVE');
+
+INSERT INTO employees (employee_code, user_id, fullname, position, hired_date, is_active) VALUES 
+('ADMIN001', (SELECT id FROM users WHERE email='admin@shop.com'), 'Admin', 'System Admin', NOW(), true);
+
+INSERT INTO employee_roles (employee_id, role_id) VALUES
+((SELECT id FROM employees WHERE user_id=(SELECT id FROM users WHERE email='admin@shop.com')),
+ (SELECT id FROM roles WHERE name='ADMIN'));
+
+========================================
+

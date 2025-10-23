@@ -1,8 +1,9 @@
 <template>
-  <!-- Modal -->
-  <div v-if="product" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
+  <!-- Modal with Teleport -->
+  <Teleport to="body">
+    <div v-if="product" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="$emit('close')">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-diagram-3 me-2"></i>
@@ -103,14 +104,16 @@
             <i class="bi bi-x-lg me-2"></i>Đóng
           </button>
         </div>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 
-  <!-- Add/Edit Variant Modal -->
-  <div v-if="showVariantForm" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-    <div class="modal-dialog">
-      <div class="modal-content">
+  <!-- Add/Edit Variant Modal with Teleport -->
+  <Teleport to="body">
+    <div v-if="showVariantForm" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="closeVariantForm">
+      <div class="modal-dialog">
+        <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
             {{ isEditMode ? 'Chỉnh sửa biến thể' : 'Thêm biến thể mới' }}
@@ -174,13 +177,14 @@
             {{ isEditMode ? 'Cập nhật' : 'Thêm biến thể' }}
           </button>
         </div>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { productService } from '../services/productService';
 import { inventoryService } from '../../supplychain/services/supplyChainService';
 
@@ -200,6 +204,7 @@ const showVariantForm = ref(false);
 const isEditMode = ref(false);
 const submitting = ref(false);
 const errors = ref({});
+const isMounted = ref(true); // Track if component is mounted
 
 // Form data
 const form = ref({
@@ -214,19 +219,24 @@ const inventory = ref({});
 
 // Methods
 const fetchVariants = async () => {
-  if (!props.product?.id) return;
+  if (!props.product?.id || !isMounted.value) return;
   
   loading.value = true;
   try {
     const response = await productService.getVariantsForProduct(props.product.id);
+    if (!isMounted.value) return; // Check if still mounted
+    
     variants.value = response.data || [];
     
     // Load inventory data for all variants
     await loadInventoryData();
   } catch (error) {
+    if (!isMounted.value) return; // Don't log if unmounted
     console.error("Failed to fetch variants:", error);
   } finally {
-    loading.value = false;
+    if (isMounted.value) {
+      loading.value = false;
+    }
   }
 };
 
@@ -321,11 +331,15 @@ const confirmDelete = async (variant) => {
 
 // Load inventory data for all variants
 const loadInventoryData = async () => {
-  if (!variants.value.length) return;
+  if (!variants.value.length || !isMounted.value) return;
   
   try {
     for (const variant of variants.value) {
+      if (!isMounted.value) return; // Stop if component unmounted
+      
       const response = await inventoryService.getAll({ variantId: variant.id });
+      if (!isMounted.value) return; // Check again after async operation
+      
       let totalStock = 0;
       
       if (response.data && Array.isArray(response.data.content)) {
@@ -334,10 +348,14 @@ const loadInventoryData = async () => {
         totalStock = response.data.reduce((total, item) => total + (item.quantityOnHand || 0), 0);
       }
       
-      inventory.value[variant.id] = totalStock;
+      if (isMounted.value) {
+        inventory.value[variant.id] = totalStock;
+      }
     }
   } catch (error) {
-    console.warn('Failed to load inventory data:', error);
+    if (isMounted.value) {
+      console.warn('Failed to load inventory data:', error);
+    }
   }
 };
 
@@ -355,8 +373,9 @@ const formatCurrency = (value) => {
 };
 
 // Watch for product changes
-watch(() => props.product, (newProduct) => {
-  if (newProduct) {
+let stopWatch = null;
+stopWatch = watch(() => props.product, (newProduct) => {
+  if (newProduct && isMounted.value) {
     fetchVariants();
   }
 }, { immediate: true });
@@ -366,5 +385,23 @@ onMounted(() => {
   if (props.product) {
     fetchVariants();
   }
+});
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  // Mark as unmounted to prevent state updates
+  isMounted.value = false;
+  
+  // Stop watcher
+  if (stopWatch) {
+    stopWatch();
+  }
+  
+  // Close any open modals
+  showVariantForm.value = false;
+  
+  // Clear data
+  variants.value = [];
+  inventory.value = {};
 });
 </script>

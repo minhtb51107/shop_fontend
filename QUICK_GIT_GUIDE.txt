@@ -1,0 +1,130 @@
+╔════════════════════════════════════════════════════════════╗
+║          HƯỚNG DẪN COMMIT & PUSH LÊN GITHUB                ║
+╚════════════════════════════════════════════════════════════╝
+
+📦 ĐÃ TẠO CÁC FILE:
+├── GIT_COMMIT_GUIDE.md         (Hướng dẫn chi tiết)
+├── commit_and_push.bat         (Script tự động)
+├── COMMIT_MESSAGE.txt          (Template commit message)
+└── QUICK_GIT_GUIDE.txt         (File này)
+
+════════════════════════════════════════════════════════════
+
+🚀 CÁCH 1: DÙNG SCRIPT TỰ ĐỘNG (NHANH NHẤT)
+
+1. Double-click file: commit_and_push.bat
+2. Xem git status
+3. Confirm Y để commit
+4. Confirm Y để push
+5. Done!
+
+════════════════════════════════════════════════════════════
+
+⌨️ CÁCH 2: CHẠY LỆNH MANUAL (KIỂM SOÁT TỐT HƠN)
+
+# Bước 1: Kiểm tra
+git status
+
+# Bước 2: Add files
+git add .
+
+# Bước 3: Commit (copy message từ COMMIT_MESSAGE.txt)
+git commit -F COMMIT_MESSAGE.txt
+
+# Hoặc commit message ngắn:
+git commit -m "feat: refactor admin panel & integrate real APIs"
+
+# Bước 4: Kiểm tra commit
+git log --oneline -1
+
+# Bước 5: Push
+git push origin Admin_Panel
+
+════════════════════════════════════════════════════════════
+
+📋 NHỮNG GÌ SẼ ĐƯỢC COMMIT:
+
+✅ Frontend Changes:
+   - AdminLayout.vue (thêm 4 menus)
+   - DashboardView.vue (dùng real APIs)
+   - dashboardService.js (mới)
+   - ProductList.vue (bug fixes)
+
+✅ Documentation:
+   - SETUP_ADMIN_GUIDE.md
+   - DA_SUA_SIDEBAR_NGUOI_DUNG.md
+   - FILES_SUMMARY.md
+   - GIT_COMMIT_GUIDE.md
+   - COMMIT_MESSAGE.txt
+   - QUICK_GIT_GUIDE.txt
+
+✅ Database Scripts:
+   - setup_admin_quick.sql
+   - insert_sample_data.sql
+
+✅ Deleted Files:
+   - 34 files không cần thiết
+
+════════════════════════════════════════════════════════════
+
+🎯 SAU KHI PUSH:
+
+1. Mở GitHub:
+   https://github.com/YOUR_USERNAME/shop_fontend
+
+2. Vào branch: Admin_Panel
+
+3. Kiểm tra:
+   ✓ Commits có hiển thị không
+   ✓ Files đã update chưa
+   ✓ Không có file nhạy cảm
+
+4. (Optional) Create Pull Request:
+   - Click "Compare & pull request"
+   - Base: main/master
+   - Compare: Admin_Panel
+   - Add description
+   - Create PR
+
+════════════════════════════════════════════════════════════
+
+⚠️ LƯU Ý:
+
+• Branch hiện tại: Admin_Panel
+• Không commit node_modules/ (.gitignore đã loại bỏ)
+• Không commit .env files
+• Đã xóa 34 files không cần thiết
+• Total files còn: 7 (essential only)
+
+════════════════════════════════════════════════════════════
+
+🐛 NẾU GẶP LỖI:
+
+"Updates were rejected":
+→ git pull origin Admin_Panel
+→ Resolve conflicts (nếu có)
+→ git push origin Admin_Panel
+
+"Permission denied":
+→ Kiểm tra GitHub credentials
+→ Có thể cần Personal Access Token
+
+"Nothing to commit":
+→ Tất cả đã được commit rồi!
+→ Chỉ cần: git push origin Admin_Panel
+
+════════════════════════════════════════════════════════════
+
+✅ CHECKLIST:
+
+□ Đã kiểm tra git status
+□ Đã add files: git add .
+□ Đã commit với message rõ ràng
+□ Đã verify commit: git log -1
+□ Đã push: git push origin Admin_Panel
+□ Đã kiểm tra trên GitHub
+
+════════════════════════════════════════════════════════════
+
+🎉 DONE! HAPPY CODING!
+

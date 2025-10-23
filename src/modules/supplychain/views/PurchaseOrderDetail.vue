@@ -157,8 +157,11 @@ const approveOrder = async () => {
         try {
             const response = await purchaseOrderService.approve(props.id);
             purchaseOrder.value = response.data;
+            alert('✅ Đơn hàng đã được duyệt thành công!');
         } catch (error) {
-            alert('Duyệt đơn hàng thất bại!');
+            console.error('Approve error:', error);
+            const errorMsg = error.response?.data?.message || 'Duyệt đơn hàng thất bại!';
+            alert(`❌ ${errorMsg}`);
         } finally {
             isSaving.value = false;
         }
@@ -171,8 +174,11 @@ const cancelOrder = async () => {
         try {
             const response = await purchaseOrderService.cancel(props.id);
             purchaseOrder.value = response.data;
+            alert('✅ Đơn hàng đã được hủy!');
         } catch (error) {
-            alert('Hủy đơn hàng thất bại!');
+            console.error('Cancel error:', error);
+            const errorMsg = error.response?.data?.message || 'Hủy đơn hàng thất bại!';
+            alert(`❌ ${errorMsg}`);
         } finally {
             isSaving.value = false;
         }

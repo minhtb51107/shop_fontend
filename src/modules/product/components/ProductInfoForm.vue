@@ -159,7 +159,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { brandService, categoryService, productService } from '../services/productService';
 
 const props = defineProps({ 
@@ -186,6 +186,7 @@ const product = ref({
 const brands = ref([]);
 const categories = ref([]);
 const specFields = ref([]);
+const isMounted = ref(true); // Track if component is mounted
 
 // Computed
 const isEditMode = computed(() => !!props.productId);
@@ -219,8 +220,9 @@ const specTemplates = {
 };
 
 // Watch for external product prop
-watch(() => props.product, (newProduct) => {
-  if (newProduct) {
+let stopWatch = null;
+stopWatch = watch(() => props.product, (newProduct) => {
+  if (newProduct && isMounted.value) {
     loadProductData(newProduct);
     emit('product-loaded', newProduct);
   }
@@ -228,35 +230,49 @@ watch(() => props.product, (newProduct) => {
 
 // Methods
 const loadBrandsAndCategories = async () => {
+  if (!isMounted.value) return;
+  
   loading.value = true;
   try {
     const [brandRes, catRes] = await Promise.all([
       brandService.getAll(),
       categoryService.getAll()
     ]);
+    
+    if (!isMounted.value) return; // Check if still mounted
+    
     brands.value = brandRes.data || [];
     categories.value = catRes.data || [];
   } catch (error) {
+    if (!isMounted.value) return;
     console.error('Failed to load brands/categories:', error);
     emit('error', 'Không thể tải danh sách thương hiệu và danh mục');
   } finally {
-    loading.value = false;
+    if (isMounted.value) {
+      loading.value = false;
+    }
   }
 };
 
 const loadProduct = async () => {
-  if (!props.productId) return;
+  if (!props.productId || !isMounted.value) return;
   
   loading.value = true;
   try {
     const response = await productService.getById(props.productId);
+    
+    if (!isMounted.value) return; // Check if still mounted
+    
     loadProductData(response.data);
     emit('product-loaded', response.data);
   } catch (error) {
+    if (!isMounted.value) return;
     console.error('Failed to load product:', error);
     emit('error', 'Không thể tải thông tin sản phẩm');
   } finally {
-    loading.value = false;
+    if (isMounted.value) {
+      loading.value = false;
+    }
   }
 };
 
@@ -381,6 +397,32 @@ onMounted(async () => {
   if (isEditMode.value && !props.product) {
     await loadProduct();
   }
+});
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  // Mark as unmounted to prevent state updates
+  isMounted.value = false;
+  
+  // Stop watcher
+  if (stopWatch) {
+    stopWatch();
+  }
+  
+  // Clear data
+  product.value = {
+    id: null,
+    name: '',
+    skuPrefix: '',
+    description: '',
+    brandId: '',
+    categoryId: '',
+    isActive: true,
+    specs: {}
+  };
+  errors.value = {};
+  loading.value = false;
+  submitting.value = false;
 });
 </script>
 

@@ -6,6 +6,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n' // Import i18n
+import permissionDirective from './directives/permission'
 import { useThemeStore } from './stores/theme'
 import { useI18nStore } from './stores/i18n' // Import i18n store
 
@@ -41,5 +42,8 @@ i18nStore.initializeLocale()
 
 // Sync i18n locale with store
 i18n.global.locale.value = i18nStore.locale
+
+// Register global directives
+app.directive('permission', permissionDirective)
 
 app.mount('#app')

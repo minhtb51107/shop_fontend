@@ -27,25 +27,37 @@ const router = createRouter({
           path: 'customers', 
           name: 'customers-list', 
           component: () => import('../modules/user/views/CustomerList.vue'),
-          meta: { title: 'Quản lý khách hàng' }
+          meta: { 
+            title: 'Quản lý khách hàng',
+            permissions: ['CUSTOMER_READ'] // Yêu cầu quyền đọc khách hàng
+          }
         },
         { 
           path: 'employees', 
           name: 'employees', 
           component: () => import('../modules/user/views/EmployeeList.vue'),
-          meta: { title: 'Quản lý nhân viên' }
+          meta: { 
+            title: 'Quản lý nhân viên',
+            permissions: ['EMPLOYEE_READ']
+          }
         },
         { 
           path: 'roles', 
           name: 'roles', 
           component: () => import('../modules/user/views/RoleList.vue'),
-          meta: { title: 'Quản lý vai trò' }
+          meta: { 
+            title: 'Quản lý vai trò',
+            roles: ['ADMIN'] // Chỉ admin
+          }
         },
         { 
           path: 'permissions', 
           name: 'permissions', 
           component: () => import('../modules/user/views/PermissionList.vue'),
-          meta: { title: 'Quản lý quyền' }
+          meta: { 
+            title: 'Quản lý quyền',
+            roles: ['ADMIN'] // Chỉ admin
+          }
         },
         { 
           path: 'activity-logs', 
@@ -59,7 +71,10 @@ const router = createRouter({
           path: 'orders', 
           name: 'orders-list', 
           component: () => import('../modules/sale/views/OrderList.vue'),
-          meta: { title: 'Quản lý đơn hàng' }
+          meta: { 
+            title: 'Quản lý đơn hàng',
+            permissions: ['ORDER_READ']
+          }
         },
         { 
           path: 'orders/:id', 
@@ -72,7 +87,10 @@ const router = createRouter({
           path: 'promotions', 
           name: 'promotions-list', 
           component: () => import('../modules/sale/views/PromotionList.vue'),
-          meta: { title: 'Quản lý khuyến mãi' }
+          meta: { 
+            title: 'Quản lý khuyến mãi',
+            permissions: ['PROMOTION_READ']
+          }
         },
         
         // Supply Chain Routes
@@ -119,20 +137,29 @@ const router = createRouter({
           path: 'products', 
           name: 'products-list', 
           component: () => import('../modules/product/views/ProductList.vue'),
-          meta: { title: 'Quản lý sản phẩm' }
+          meta: { 
+            title: 'Quản lý sản phẩm',
+            permissions: ['PRODUCT_READ']
+          }
         },
         { 
           path: 'products/create', 
           name: 'product-create', 
           component: () => import('../modules/product/views/ProductEdit.vue'),
-          meta: { title: 'Tạo sản phẩm' }
+          meta: { 
+            title: 'Tạo sản phẩm',
+            permissions: ['PRODUCT_WRITE']
+          }
         },
         { 
           path: 'products/edit/:id', 
           name: 'product-edit', 
           component: () => import('../modules/product/views/ProductEdit.vue'), 
           props: true,
-          meta: { title: 'Chỉnh sửa sản phẩm' }
+          meta: { 
+            title: 'Chỉnh sửa sản phẩm',
+            permissions: ['PRODUCT_WRITE']
+          }
         },
         { 
           path: 'categories', 
@@ -243,6 +270,43 @@ router.beforeEach(async (to, from, next) => {
         // If we can't fetch user, logout and redirect
         authStore.logout();
         next({ name: 'login', query: { redirect: to.fullPath } });
+        return;
+      }
+    }
+    
+    // ====== PERMISSION CHECK ======
+    // TẠM THỜI TẮT để debug - sẽ bật lại sau khi fix backend
+    
+    // Kiểm tra role nếu route yêu cầu
+    if (false && to.meta.roles && Array.isArray(to.meta.roles)) { // TẠM THỜI TẮT
+      const hasRequiredRole = to.meta.roles.some(role => authStore.hasRole(role));
+      if (!hasRequiredRole) {
+        console.warn(`Access denied: Required role ${to.meta.roles.join(' or ')}`);
+        next({ 
+          name: 'dashboard', 
+          query: { 
+            error: 'permission_denied',
+            message: 'Bạn không có quyền truy cập trang này' 
+          }
+        });
+        return;
+      }
+    }
+    
+    // Kiểm tra permission nếu route yêu cầu
+    if (false && to.meta.permissions && Array.isArray(to.meta.permissions)) { // TẠM THỜI TẮT
+      const hasRequiredPermission = to.meta.permissions.some(permission => 
+        authStore.hasPermission(permission)
+      );
+      if (!hasRequiredPermission) {
+        console.warn(`Access denied: Required permission ${to.meta.permissions.join(' or ')}`);
+        next({ 
+          name: 'dashboard', 
+          query: { 
+            error: 'permission_denied',
+            message: 'Bạn không có quyền truy cập trang này' 
+          }
+        });
         return;
       }
     }

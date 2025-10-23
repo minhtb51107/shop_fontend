@@ -1,0 +1,136 @@
+===============================================
+QUICK SETUP - TẠO TÀI KHOẢN MỚI
+===============================================
+
+BƯỚC 1: ĐĂNG KÝ (Postman)
+--------------------------
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+Body:
+{
+  "email": "admin@shop.com",
+  "password": "admin123456",
+  "fullname": "Administrator",
+  "phoneNumber": "0901234567"
+}
+
+
+BƯỚC 2: TẠO EMPLOYEE (pgAdmin)
+-------------------------------
+-- Chạy SQL này:
+
+INSERT INTO employees (employee_code, user_id, fullname, position, department, hired_date, is_active)
+SELECT 'ADMIN001', u.id, 'Administrator', 'System Admin', 'IT', CURRENT_DATE, TRUE
+FROM users u WHERE u.email = 'admin@shop.com'
+AND NOT EXISTS (SELECT 1 FROM employees WHERE user_id = u.id);
+
+
+BƯỚC 3: GÁN ROLES (pgAdmin)
+----------------------------
+-- Gán ADMIN role:
+
+INSERT INTO employee_roles (employee_id, role_id)
+SELECT e.id, (SELECT id FROM roles WHERE name = 'ADMIN')
+FROM employees e
+JOIN users u ON e.user_id = u.id
+WHERE u.email = 'admin@shop.com'
+AND NOT EXISTS (
+    SELECT 1 FROM employee_roles 
+    WHERE employee_id = e.id 
+    AND role_id = (SELECT id FROM roles WHERE name = 'ADMIN')
+);
+
+-- Tạo và gán PURCHASING_MANAGER:
+
+INSERT INTO roles (name, description)
+SELECT 'PURCHASING_MANAGER', 'Quản lý mua hàng'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'PURCHASING_MANAGER');
+
+INSERT INTO employee_roles (employee_id, role_id)
+SELECT e.id, (SELECT id FROM roles WHERE name = 'PURCHASING_MANAGER')
+FROM employees e
+JOIN users u ON e.user_id = u.id
+WHERE u.email = 'admin@shop.com'
+AND NOT EXISTS (
+    SELECT 1 FROM employee_roles 
+    WHERE employee_id = e.id 
+    AND role_id = (SELECT id FROM roles WHERE name = 'PURCHASING_MANAGER')
+);
+
+
+BƯỚC 4: ĐĂNG NHẬP (Postman)
+----------------------------
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+Body:
+{
+  "email": "admin@shop.com",
+  "password": "admin123456"
+}
+
+Response: Copy accessToken
+
+
+BƯỚC 5: KIỂM TRA (Postman)
+---------------------------
+GET http://localhost:8080/api/v1/auth/me
+Authorization: Bearer {accessToken}
+
+Response phải có:
+- userType: "EMPLOYEE"
+- roles: [...]
+
+
+BƯỚC 6: TEST PURCHASE ORDERS (Postman)
+---------------------------------------
+GET http://localhost:8080/api/v1/purchase-orders
+Authorization: Bearer {accessToken}
+
+Response: 200 OK (không phải 500)
+
+
+===============================================
+VERIFY SQL
+===============================================
+
+-- Kiểm tra tất cả:
+SELECT 
+    u.email,
+    e.employee_code,
+    r.name as role_name
+FROM users u
+JOIN employees e ON u.id = e.user_id
+LEFT JOIN employee_roles er ON e.id = er.employee_id
+LEFT JOIN roles r ON er.role_id = r.id
+WHERE u.email = 'admin@shop.com';
+
+-- Kết quả mong đợi:
+-- email: admin@shop.com
+-- role_name: ADMIN
+-- role_name: PURCHASING_MANAGER
+
+
+===============================================
+NẾU LỖI
+===============================================
+
+Lỗi: Email đã tồn tại
+→ DELETE FROM users WHERE email = 'admin@shop.com';
+
+Lỗi: Mật khẩu quá ngắn
+→ Dùng password ít nhất 8 ký tự: "admin123456"
+
+Lỗi: Roles không tồn tại
+→ Chạy: database_setup_permissions.sql
+
+Lỗi 500 khi GET /purchase-orders
+→ Kiểm tra employee đã tạo chưa
+→ Kiểm tra roles đã gán chưa
+
+
+===============================================
+XONG!
+===============================================
+

@@ -3,7 +3,11 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="mb-0">Danh sách Sản phẩm</h2>
-      <router-link to="/products/create" class="btn btn-primary">
+      <router-link 
+        v-permission="'PRODUCT_WRITE'" 
+        to="/products/create" 
+        class="btn btn-primary"
+      >
         <i class="bi bi-plus-lg me-2"></i>Thêm sản phẩm
       </router-link>
     </div>
@@ -108,7 +112,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="product in products" :key="product.id">
+              <template v-for="product in products" :key="product.id">
+              <tr v-if="product && product.id">
                 <td>
                   <span class="badge bg-light text-dark">{{ product.id }}</span>
                 </td>
@@ -140,15 +145,17 @@
                   <div class="btn-group" role="group">
                     <!-- Variant Manager -->
                     <button 
+                      v-permission="'PRODUCT_WRITE'"
                       class="btn btn-sm btn-outline-info" 
                       title="Quản lý biến thể"
                       @click="openVariantModal(product)"
                     >
                       <i class="bi bi-diagram-3"></i>
-                    </button>
+</button>
 
                     <!-- Edit -->
                     <router-link
+                      v-permission="'PRODUCT_WRITE'"
                       :to="{ name: 'product-edit', params: { id: product.id } }"
                       class="btn btn-sm btn-outline-secondary"
                       title="Chỉnh sửa"
@@ -158,6 +165,7 @@
 
                     <!-- Delete -->
                     <button 
+                      v-permission="'PRODUCT_DELETE'"
                       class="btn btn-sm btn-outline-danger" 
                       title="Xóa"
                       @click="confirmDelete(product)"
@@ -167,6 +175,7 @@
                   </div>
                 </td>
               </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -185,7 +194,7 @@
 
     <!-- Variant Manager Modal -->
     <VariantManager 
-      v-if="selectedProduct" 
+      v-if="selectedProduct && selectedProduct.id" 
       :product="selectedProduct"
       @close="selectedProduct = null"
       @updated="loadProducts"
@@ -194,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { productService, brandService, categoryService } from '../services/productService'
 import VariantManager from '../components/VariantManager.vue'
 
@@ -232,17 +241,39 @@ const loadProducts = async () => {
   error.value = ''
   
   try {
-    const params = new URLSearchParams()
+    // Build params object thay vì URLSearchParams
+    const params = {}
     
-    if (filters.value.search) params.append('search', filters.value.search)
-    if (filters.value.brandId) params.append('brandId', filters.value.brandId)
-    if (filters.value.categoryId) params.append('categoryId', filters.value.categoryId)
+    if (filters.value.search) params.search = filters.value.search
+    if (filters.value.brandId) params.brandId = filters.value.brandId
+    if (filters.value.categoryId) params.categoryId = filters.value.categoryId
     if (filters.value.status) {
-      params.append('isActive', filters.value.status === 'active')
+      params.isActive = filters.value.status === 'active'
     }
     
-    const response = await productService.getAll(params.toString() ? `?${params.toString()}` : '')
-    products.value = response.data || []
+    console.log('🔧 Filters:', filters.value)
+    console.log('📤 Params gửi lên backend:', params)
+    
+    const response = await productService.getAll(params)
+    
+    // Debug: Log response để kiểm tra cấu trúc
+    console.log('🔍 Product API Response:', response)
+    console.log('📦 Response.data:', response.data)
+    
+    // Backend có thể trả về dạng paginated: {content: [...], totalElements: 10}
+    // hoặc trả về array trực tiếp: [...]
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        products.value = response.data
+      } else if (response.data.content && Array.isArray(response.data.content)) {
+        products.value = response.data.content
+      } else {
+        console.warn('⚠️ Unexpected response structure:', response.data)
+        products.value = []
+      }
+    } else {
+      products.value = []
+    }
   } catch (err) {
     console.error('Failed to fetch products:', err)
     
@@ -264,7 +295,16 @@ const loadProducts = async () => {
 const loadBrands = async () => {
   try {
     const response = await brandService.getAll()
-    brands.value = response.data || []
+    console.log('🏷️ Brands Response:', response.data)
+    
+    // Handle paginated or array response
+    if (Array.isArray(response.data)) {
+      brands.value = response.data
+    } else if (response.data?.content) {
+      brands.value = response.data.content
+    } else {
+      brands.value = []
+    }
   } catch (err) {
     console.error('Failed to fetch brands:', err)
     // Don't show error for brands - just use empty array
@@ -275,7 +315,16 @@ const loadBrands = async () => {
 const loadCategories = async () => {
   try {
     const response = await categoryService.getAll()
-    categories.value = response.data || []
+    console.log('📁 Categories Response:', response.data)
+    
+    // Handle paginated or array response
+    if (Array.isArray(response.data)) {
+      categories.value = response.data
+    } else if (response.data?.content) {
+      categories.value = response.data.content
+    } else {
+      categories.value = []
+    }
   } catch (err) {
     console.error('Failed to fetch categories:', err)
     // Don't show error for categories - just use empty array
@@ -321,5 +370,16 @@ onMounted(async () => {
     loadBrands(),
     loadCategories()
   ])
+})
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  // Close modal if open
+  selectedProduct.value = null
+  // Clear search timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
+  }
 })
 </script>

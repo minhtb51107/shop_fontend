@@ -267,6 +267,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import dashboardService from '@/services/dashboardService'
 
 const authStore = useAuthStore()
 
@@ -274,19 +275,21 @@ const authStore = useAuthStore()
 const currentTime = ref('')
 const selectedPeriod = ref('7d')
 const refreshInterval = ref(null)
+const loading = ref(true)
+const error = ref('')
 
 // Computed properties
 const userName = computed(() => authStore.user?.fullname || 'Administrator')
 
-// Stats data
+// Stats data - Sẽ được load từ API
 const stats = ref([
   {
     id: 1,
     icon: 'bi bi-cart-check',
     label: 'Tổng đơn hàng',
-    value: '1,247',
-    description: 'Tăng 12.5% so với tháng trước',
-    trend: '+12.5%',
+    value: '...',
+    description: 'Đang tải dữ liệu...',
+    trend: '...',
     trendIcon: 'bi bi-arrow-up',
     trendClass: 'trend-up',
     chartHeight: 75,
@@ -296,9 +299,9 @@ const stats = ref([
     id: 2,
     icon: 'bi bi-currency-dollar',
     label: 'Doanh thu',
-    value: '₫2.4M',
-    description: 'Tăng 8.2% so với tháng trước',
-    trend: '+8.2%',
+    value: '...',
+    description: 'Đang tải dữ liệu...',
+    trend: '...',
     trendIcon: 'bi bi-arrow-up',
     trendClass: 'trend-up',
     chartHeight: 65,
@@ -308,9 +311,9 @@ const stats = ref([
     id: 3,
     icon: 'bi bi-people',
     label: 'Khách hàng',
-    value: '3,891',
-    description: 'Tăng 15.3% so với tháng trước',
-    trend: '+15.3%',
+    value: '...',
+    description: 'Đang tải dữ liệu...',
+    trend: '...',
     trendIcon: 'bi bi-arrow-up',
     trendClass: 'trend-up',
     chartHeight: 85,
@@ -320,9 +323,9 @@ const stats = ref([
     id: 4,
     icon: 'bi bi-box-seam',
     label: 'Sản phẩm',
-    value: '1,156',
-    description: 'Tăng 5.7% so với tháng trước',
-    trend: '+5.7%',
+    value: '...',
+    description: 'Đang tải dữ liệu...',
+    trend: '...',
     trendIcon: 'bi bi-arrow-up',
     trendClass: 'trend-up',
     chartHeight: 55,
@@ -330,53 +333,26 @@ const stats = ref([
   }
 ])
 
-// Recent orders
-const recentOrders = ref([
-  { id: 'ORD-001', customer: 'Nguyễn Văn A', amount: 2500000, status: 'Đã giao', statusClass: 'status-delivered' },
-  { id: 'ORD-002', customer: 'Trần Thị B', amount: 1800000, status: 'Đang giao', statusClass: 'status-shipping' },
-  { id: 'ORD-003', customer: 'Lê Văn C', amount: 3200000, status: 'Chờ xử lý', statusClass: 'status-pending' },
-  { id: 'ORD-004', customer: 'Phạm Thị D', amount: 1500000, status: 'Đã giao', statusClass: 'status-delivered' },
-  { id: 'ORD-005', customer: 'Hoàng Văn E', amount: 2800000, status: 'Đang giao', statusClass: 'status-shipping' }
-])
+// Recent orders - Sẽ được load từ API
+const recentOrders = ref([])
 
-// Top products
-const topProducts = ref([
-  { id: 1, name: 'iPhone 15 Pro Max', sales: 156, rank: 1, rankClass: 'rank-gold', growth: 12 },
-  { id: 2, name: 'Samsung Galaxy S24', sales: 142, rank: 2, rankClass: 'rank-silver', growth: 8 },
-  { id: 3, name: 'MacBook Air M3', sales: 98, rank: 3, rankClass: 'rank-bronze', growth: 15 },
-  { id: 4, name: 'iPad Pro 12.9"', sales: 87, rank: 4, rankClass: 'rank-normal', growth: 6 },
-  { id: 5, name: 'AirPods Pro 2', sales: 76, rank: 5, rankClass: 'rank-normal', growth: 9 }
-])
+// Top products - Sẽ được load từ API
+const topProducts = ref([])
 
-// Revenue chart data
-const revenueChart = ref([
-  { height: 45, value: '₫1.2M', class: 'bar-primary' },
-  { height: 62, value: '₫1.8M', class: 'bar-success' },
-  { height: 38, value: '₫1.1M', class: 'bar-info' },
-  { height: 71, value: '₫2.1M', class: 'bar-warning' },
-  { height: 55, value: '₫1.6M', class: 'bar-primary' },
-  { height: 68, value: '₫2.0M', class: 'bar-success' },
-  { height: 49, value: '₫1.4M', class: 'bar-info' }
-])
-
+// Revenue chart data - Sẽ được load từ API
+const revenueChart = ref([])
 const chartLabels = ref(['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'])
 
-// System status
+// System status - Sẽ được load từ API
 const systemStatus = ref([
-  { id: 1, name: 'Server', description: 'Trạng thái máy chủ', value: 'Online', statusClass: 'status-online', valueClass: 'value-success', icon: 'bi bi-server' },
-  { id: 2, name: 'Database', description: 'Kết nối cơ sở dữ liệu', value: 'Connected', statusClass: 'status-online', valueClass: 'value-success', icon: 'bi bi-database' },
-  { id: 3, name: 'API', description: 'Dịch vụ API', value: 'Active', statusClass: 'status-online', valueClass: 'value-success', icon: 'bi bi-cloud-check' },
-  { id: 4, name: 'Storage', description: 'Dung lượng lưu trữ', value: '78%', statusClass: 'status-warning', valueClass: 'value-warning', icon: 'bi bi-hdd' }
+  { id: 1, name: 'Server', description: 'Trạng thái máy chủ', value: 'Checking...', statusClass: 'status-checking', valueClass: 'value-info', icon: 'bi bi-server' },
+  { id: 2, name: 'Database', description: 'Kết nối cơ sở dữ liệu', value: 'Checking...', statusClass: 'status-checking', valueClass: 'value-info', icon: 'bi bi-database' },
+  { id: 3, name: 'API', description: 'Dịch vụ API', value: 'Checking...', statusClass: 'status-checking', valueClass: 'value-info', icon: 'bi bi-cloud-check' },
+  { id: 4, name: 'Storage', description: 'Dung lượng lưu trữ', value: '...', statusClass: 'status-checking', valueClass: 'value-info', icon: 'bi bi-hdd' }
 ])
 
-// Recent activities
-const recentActivities = ref([
-  { id: 1, text: 'Đơn hàng #ORD-001 đã được giao thành công', time: '2 phút trước', icon: 'bi bi-check-circle', typeClass: 'activity-success', status: 'Hoàn thành', statusClass: 'status-completed' },
-  { id: 2, text: 'Sản phẩm iPhone 15 Pro Max đã được thêm vào kho', time: '15 phút trước', icon: 'bi bi-plus-circle', typeClass: 'activity-info', status: 'Đang xử lý', statusClass: 'status-processing' },
-  { id: 3, text: 'Khách hàng Nguyễn Văn A đã đăng ký tài khoản', time: '1 giờ trước', icon: 'bi bi-person-plus', typeClass: 'activity-primary', status: 'Mới', statusClass: 'status-new' },
-  { id: 4, text: 'Báo cáo doanh thu tháng 10 đã được tạo', time: '2 giờ trước', icon: 'bi bi-file-earmark-text', typeClass: 'activity-warning', status: 'Hoàn thành', statusClass: 'status-completed' },
-  { id: 5, text: 'Cập nhật giá sản phẩm Samsung Galaxy S24', time: '3 giờ trước', icon: 'bi bi-currency-dollar', typeClass: 'activity-success', status: 'Hoàn thành', statusClass: 'status-completed' }
-])
+// Recent activities - Sẽ được load từ API
+const recentActivities = ref([])
 
 // Methods
 const updateTime = () => {
@@ -388,11 +364,6 @@ const updateTime = () => {
   })
 }
 
-const refreshData = () => {
-  updateTime()
-  // Add loading animation or API call here
-}
-
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -400,10 +371,175 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('vi-VN').format(num)
+}
+
+// Load dashboard data từ API
+const loadDashboardData = async () => {
+  loading.value = true
+  error.value = ''
+  
+  try {
+    console.log('🔄 Loading dashboard data...')
+    
+    // Load overview stats
+    const overviewStats = await dashboardService.getOverviewStats()
+    console.log('📊 Overview stats:', overviewStats)
+    
+    // Update stats cards
+    stats.value[0].value = formatNumber(overviewStats.totalOrders)
+    stats.value[0].description = `Dữ liệu thực từ hệ thống`
+    stats.value[0].trend = overviewStats.orderGrowth > 0 ? `+${overviewStats.orderGrowth}%` : `${overviewStats.orderGrowth}%`
+    
+    stats.value[1].value = formatCurrency(overviewStats.totalRevenue)
+    stats.value[1].description = `Dữ liệu thực từ hệ thống`
+    stats.value[1].trend = overviewStats.revenueGrowth > 0 ? `+${overviewStats.revenueGrowth}%` : `${overviewStats.revenueGrowth}%`
+    
+    stats.value[2].value = formatNumber(overviewStats.totalCustomers)
+    stats.value[2].description = `Dữ liệu thực từ hệ thống`
+    stats.value[2].trend = overviewStats.customerGrowth > 0 ? `+${overviewStats.customerGrowth}%` : `${overviewStats.customerGrowth}%`
+    
+    stats.value[3].value = formatNumber(overviewStats.totalProducts)
+    stats.value[3].description = `Dữ liệu thực từ hệ thống`
+    stats.value[3].trend = overviewStats.productGrowth > 0 ? `+${overviewStats.productGrowth}%` : `${overviewStats.productGrowth}%`
+    
+    // Load recent orders
+    const orders = await dashboardService.getRecentOrders(5)
+    console.log('📦 Recent orders:', orders)
+    recentOrders.value = orders.map(order => ({
+      id: order.orderCode || `ORD-${order.id}`,
+      customer: order.customerName || 'Unknown',
+      amount: order.totalAmount || 0,
+      status: getOrderStatusText(order.status),
+      statusClass: getOrderStatusClass(order.status)
+    }))
+    
+    // Load top products
+    const products = await dashboardService.getTopProducts(5)
+    console.log('🏆 Top products:', products)
+    topProducts.value = products.map((product, index) => ({
+      id: product.id,
+      name: product.name,
+      sales: product.soldQuantity || 0,
+      rank: index + 1,
+      rankClass: index === 0 ? 'rank-gold' : index === 1 ? 'rank-silver' : index === 2 ? 'rank-bronze' : 'rank-normal',
+      growth: 0 // TODO: Calculate growth
+    }))
+    
+    // Load system status
+    const systemStat = await dashboardService.getSystemStatus()
+    console.log('💻 System status:', systemStat)
+    systemStatus.value[0].value = systemStat.backend === 'online' ? 'Online' : 'Offline'
+    systemStatus.value[0].statusClass = systemStat.backend === 'online' ? 'status-online' : 'status-offline'
+    systemStatus.value[0].valueClass = systemStat.backend === 'online' ? 'value-success' : 'value-danger'
+    
+    systemStatus.value[1].value = systemStat.database === 'connected' ? 'Connected' : 'Disconnected'
+    systemStatus.value[1].statusClass = systemStat.database === 'connected' ? 'status-online' : 'status-offline'
+    systemStatus.value[1].valueClass = systemStat.database === 'connected' ? 'value-success' : 'value-danger'
+    
+    systemStatus.value[2].value = systemStat.api === 'active' ? 'Active' : 'Inactive'
+    systemStatus.value[2].statusClass = systemStat.api === 'active' ? 'status-online' : 'status-offline'
+    systemStatus.value[2].valueClass = systemStat.api === 'active' ? 'value-success' : 'value-danger'
+    
+    // Load recent activities
+    const activities = await dashboardService.getRecentActivities(5)
+    console.log('📝 Recent activities:', activities)
+    if (activities.length > 0) {
+      recentActivities.value = activities.map(activity => ({
+        id: activity.id,
+        text: activity.action || activity.description,
+        time: formatTimeAgo(activity.timestamp || activity.createdAt),
+        icon: getActivityIcon(activity.action),
+        typeClass: getActivityClass(activity.action),
+        status: 'Hoàn thành',
+        statusClass: 'status-completed'
+      }))
+    }
+    
+    console.log('✅ Dashboard data loaded successfully')
+  } catch (err) {
+    console.error('❌ Error loading dashboard data:', err)
+    error.value = 'Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Helper functions
+const getOrderStatusText = (status) => {
+  const statusMap = {
+    'PENDING': 'Chờ xử lý',
+    'CONFIRMED': 'Đã xác nhận',
+    'PROCESSING': 'Đang xử lý',
+    'SHIPPING': 'Đang giao',
+    'DELIVERED': 'Đã giao',
+    'CANCELLED': 'Đã hủy',
+    'RETURNED': 'Đã trả hàng'
+  }
+  return statusMap[status] || status
+}
+
+const getOrderStatusClass = (status) => {
+  const classMap = {
+    'PENDING': 'status-pending',
+    'CONFIRMED': 'status-confirmed',
+    'PROCESSING': 'status-processing',
+    'SHIPPING': 'status-shipping',
+    'DELIVERED': 'status-delivered',
+    'CANCELLED': 'status-cancelled',
+    'RETURNED': 'status-returned'
+  }
+  return classMap[status] || 'status-pending'
+}
+
+const getActivityIcon = (action) => {
+  if (action?.includes('order') || action?.includes('đơn')) return 'bi bi-check-circle'
+  if (action?.includes('product') || action?.includes('sản phẩm')) return 'bi bi-plus-circle'
+  if (action?.includes('customer') || action?.includes('khách hàng')) return 'bi bi-person-plus'
+  if (action?.includes('report') || action?.includes('báo cáo')) return 'bi bi-file-earmark-text'
+  return 'bi bi-info-circle'
+}
+
+const getActivityClass = (action) => {
+  if (action?.includes('order') || action?.includes('đơn')) return 'activity-success'
+  if (action?.includes('product') || action?.includes('sản phẩm')) return 'activity-info'
+  if (action?.includes('customer') || action?.includes('khách hàng')) return 'activity-primary'
+  return 'activity-warning'
+}
+
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Vừa xong'
+  const date = new Date(timestamp)
+  const now = new Date()
+  const seconds = Math.floor((now - date) / 1000)
+  
+  if (seconds < 60) return 'Vừa xong'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`
+  return `${Math.floor(seconds / 86400)} ngày trước`
+}
+
+const refreshData = async () => {
+  updateTime()
+  await loadDashboardData()
+}
+
+// Note: Revenue chart data không được load tự động vì backend không có API theo period
+// Nếu cần, phải gọi getRevenueReport() với year/month cụ thể
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   updateTime()
   refreshInterval.value = setInterval(updateTime, 1000)
+  
+  // Load dashboard data
+  await loadDashboardData()
+  
+  // Auto refresh every 5 minutes
+  setInterval(() => {
+    loadDashboardData()
+  }, 5 * 60 * 1000)
 })
 
 onUnmounted(() => {

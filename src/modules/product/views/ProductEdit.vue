@@ -109,11 +109,28 @@
         </div>
 
         <!-- Variants Tab -->
-        <div v-show="activeTab === 'variants'" v-if="isEditMode && product">
-          <VariantManager 
-            :product="product"
-            @updated="onVariantsUpdated"
-          />
+        <div v-show="activeTab === 'variants'" v-if="isEditMode">
+          <div v-if="!product" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2">Đang tải thông tin sản phẩm...</div>
+          </div>
+          <div v-else>
+            <!-- Variants Management Inline (not modal) -->
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Danh sách biến thể sản phẩm</h5>
+              <button class="btn btn-primary" @click="showVariantModal = true">
+                <i class="bi bi-plus-lg me-2"></i>Quản lý biến thể
+              </button>
+            </div>
+            
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              Sản phẩm có <strong>{{ variantCount }}</strong> biến thể. 
+              Click "Quản lý biến thể" để thêm, sửa, xóa biến thể.
+            </div>
+          </div>
         </div>
 
         <!-- Inventory Tab -->
@@ -126,11 +143,19 @@
         </div>
       </div>
     </div>
+    
+    <!-- Variant Manager Modal (only shown when button clicked) -->
+    <VariantManager 
+      v-if="showVariantModal && product" 
+      :product="product"
+      @close="showVariantModal = false"
+      @updated="onVariantsUpdated"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import ProductInfoForm from '../components/ProductInfoForm.vue';
 import VariantManager from '../components/VariantManager.vue';
@@ -147,6 +172,7 @@ const error = ref('');
 const product = ref(null);
 const variantCount = ref(0);
 const activeTab = ref('info');
+const showVariantModal = ref(false); // Control modal visibility
 
 // Computed
 const isEditMode = computed(() => !!props.id);
@@ -175,6 +201,9 @@ const onError = (errorMessage) => {
 };
 
 const onVariantsUpdated = () => {
+  // Close modal
+  showVariantModal.value = false;
+  
   // Refresh variant count when variants are updated
   if (product.value?.id) {
     loadProduct(product.value.id);
@@ -218,5 +247,15 @@ onMounted(() => {
   if (isEditMode.value && props.id) {
     loadProduct(props.id);
   }
+});
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  // Close modal if open
+  showVariantModal.value = false;
+  // Clear product data
+  product.value = null;
+  error.value = '';
+  loading.value = false;
 });
 </script>

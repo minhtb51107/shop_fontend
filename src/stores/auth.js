@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.accessToken,
     currentUser: (state) => state.user,
+    
     isAdmin: (state) => {
       if (!state.user) return false;
       
@@ -38,6 +39,7 @@ export const useAuthStore = defineStore('auth', {
       
       return false;
     },
+    
     userRoles: (state) => {
       if (!state.user?.roles) return [];
       const roles = state.user.roles;
@@ -46,6 +48,35 @@ export const useAuthStore = defineStore('auth', {
       }
       return [];
     },
+    
+    /**
+     * Lấy danh sách permissions của user từ backend
+     * Backend trả về user có roles, mỗi role có permissions
+     */
+    userPermissions: (state) => {
+      if (!state.user?.roles) return [];
+      
+      const permissionSet = new Set();
+      
+      // Duyệt qua tất cả roles của user
+      const roles = Array.isArray(state.user.roles) ? state.user.roles : [];
+      
+      roles.forEach(role => {
+        // Nếu role là object có permissions
+        if (role && typeof role === 'object' && Array.isArray(role.permissions)) {
+          role.permissions.forEach(permission => {
+            // Permission có thể là string hoặc object có name
+            const permName = typeof permission === 'string' ? permission : permission.name;
+            if (permName) {
+              permissionSet.add(permName);
+            }
+          });
+        }
+      });
+      
+      return Array.from(permissionSet);
+    },
+    
     hasRole: (state) => (roleName) => {
       if (!state.user) return false;
       const roles = state.user?.roles;
@@ -55,28 +86,39 @@ export const useAuthStore = defineStore('auth', {
       }
       return false;
     },
+    
+    /**
+     * Kiểm tra user có permission không
+     * Lấy từ permissions trong roles (từ backend)
+     * Admin tự động có tất cả permissions
+     */
     hasPermission: (state) => (permission) => {
       if (!state.user) return false;
+      if (!permission) return true; // Không yêu cầu permission cụ thể
       
-      // Get user roles directly from state
+      // Admin có tất cả quyền
       const roles = state.user?.roles;
-      if (!Array.isArray(roles)) return false;
+      if (Array.isArray(roles)) {
+        const roleNames = roles.map(role => typeof role === 'string' ? role : role.name);
+        if (roleNames.includes('ADMIN')) return true;
+      }
       
-      const userRoles = roles.map(role => typeof role === 'string' ? role : role.name);
+      // Kiểm tra trong permissions từ backend
+      const permissionSet = new Set();
+      const userRoles = Array.isArray(state.user.roles) ? state.user.roles : [];
       
-      // Admin has all permissions
-      if (userRoles.includes('ADMIN')) return true;
+      userRoles.forEach(role => {
+        if (role && typeof role === 'object' && Array.isArray(role.permissions)) {
+          role.permissions.forEach(perm => {
+            const permName = typeof perm === 'string' ? perm : perm.name;
+            if (permName) {
+              permissionSet.add(permName);
+            }
+          });
+        }
+      });
       
-      // Role-based permission mapping
-      const rolePermissions = {
-        'MANAGER': ['EMPLOYEE_READ', 'EMPLOYEE_WRITE', 'CUSTOMER_READ', 'CUSTOMER_WRITE', 'PRODUCT_READ', 'PRODUCT_WRITE', 'ORDER_READ', 'ORDER_WRITE'],
-        'EMPLOYEE': ['CUSTOMER_READ', 'PRODUCT_READ', 'ORDER_READ', 'ORDER_WRITE'],
-        'CUSTOMER': ['CUSTOMER_READ']
-      };
-      
-      return userRoles.some(role => 
-        rolePermissions[role]?.includes(permission)
-      );
+      return permissionSet.has(permission);
     }
   },
 

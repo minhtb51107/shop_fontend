@@ -134,16 +134,64 @@
           <div class="nav-section-title" v-if="!sidebarCollapsed">
             <i class="bi bi-people me-2"></i>Người Dùng
           </div>
-          <router-link to="/customers" class="nav-item" :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/customers') }">
+          <router-link 
+            to="/customers" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/customers') }"
+          >
             <div class="nav-icon"><i class="bi bi-person-check"></i></div>
             <transition name="fade">
               <span v-if="!sidebarCollapsed" class="nav-text">Khách hàng</span>
             </transition>
           </router-link>
-          <router-link to="/employees" class="nav-item" :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/employees') }">
+          <router-link 
+            to="/employees" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/employees') }"
+          >
             <div class="nav-icon"><i class="bi bi-person-badge"></i></div>
             <transition name="fade">
               <span v-if="!sidebarCollapsed" class="nav-text">Nhân viên</span>
+            </transition>
+          </router-link>
+          <router-link 
+            to="/roles" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/roles') }"
+          >
+            <div class="nav-icon"><i class="bi bi-shield-check"></i></div>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed" class="nav-text">Vai trò</span>
+            </transition>
+          </router-link>
+          <router-link 
+            to="/permissions" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/permissions') }"
+          >
+            <div class="nav-icon"><i class="bi bi-key"></i></div>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed" class="nav-text">Quyền</span>
+            </transition>
+          </router-link>
+          <router-link 
+            to="/activity-logs" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/activity-logs') }"
+          >
+            <div class="nav-icon"><i class="bi bi-clock-history"></i></div>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed" class="nav-text">Nhật ký</span>
+            </transition>
+          </router-link>
+          <router-link 
+            to="/change-password" 
+            class="nav-item" 
+            :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/change-password') }"
+          >
+            <div class="nav-icon"><i class="bi bi-lock"></i></div>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed" class="nav-text">Đổi mật khẩu</span>
             </transition>
           </router-link>
         </div>
@@ -256,7 +304,11 @@ const currentPageTitle = computed(() => {
     'accounts-list': 'Tài khoản',
     'report-revenue': 'Báo cáo',
     'customers-list': 'Khách hàng',
-    'employees': 'Nhân viên'
+    'employees': 'Nhân viên',
+    'roles': 'Vai trò',
+    'permissions': 'Quyền',
+    'activity-logs': 'Nhật ký hoạt động',
+    'change-password': 'Đổi mật khẩu'
   }
   return routeNames[route.name] || 'Trang chủ'
 })
