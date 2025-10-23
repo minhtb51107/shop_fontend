@@ -357,3 +357,7 @@ onMounted(async () => {
     background-color: rgba(var(--v-theme-primary), 0.1); /* Màu nền nhẹ cho avatar */
 }
 </style>
+
+// src/views/HomeView.vue
+
+// Ghi chú để test push branch fontend_user
