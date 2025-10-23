@@ -90,12 +90,6 @@
               <span v-if="!sidebarCollapsed" class="nav-text">Đơn mua hàng</span>
             </transition>
           </router-link>
-          <router-link to="/goods-receipts" class="nav-item" :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/goods-receipts') }">
-            <div class="nav-icon"><i class="bi bi-box-arrow-in-down"></i></div>
-            <transition name="fade">
-              <span v-if="!sidebarCollapsed" class="nav-text">Phiếu nhập kho</span>
-            </transition>
-          </router-link>
           <router-link to="/suppliers" class="nav-item" :class="{ 'collapsed': sidebarCollapsed, 'active': $route.path.startsWith('/suppliers') }">
             <div class="nav-icon"><i class="bi bi-building"></i></div>
             <transition name="fade">
@@ -129,7 +123,8 @@
           </router-link>
         </div>
 
-        <!-- User Management Section -->
+        <!-- User Management Section - ẨN ĐI -->
+        <!-- 
         <div class="nav-section">
           <div class="nav-section-title" v-if="!sidebarCollapsed">
             <i class="bi bi-people me-2"></i>Người Dùng
@@ -195,6 +190,7 @@
             </transition>
           </router-link>
         </div>
+        -->
       </nav>
 
       <!-- Sidebar Footer -->
@@ -298,7 +294,6 @@ const currentPageTitle = computed(() => {
     'categories': 'Danh mục',
     'brands': 'Thương hiệu',
     'purchase-orders-list': 'Đơn mua hàng',
-    'goods-receipts-list': 'Phiếu nhập kho',
     'suppliers': 'Nhà cung cấp',
     'warehouses': 'Kho hàng',
     'accounts-list': 'Tài khoản',

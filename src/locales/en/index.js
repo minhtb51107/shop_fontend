@@ -54,7 +54,6 @@ export default {
     suppliers: 'Suppliers',
     warehouses: 'Warehouses',
     purchaseOrders: 'Purchase Orders',
-    goodsReceipts: 'Goods Receipts',
     customers: 'Customers',
     employees: 'Employees',
     roles: 'Roles',
@@ -235,25 +234,6 @@ export default {
     submitOrder: 'Submit Order',
     approveOrder: 'Approve Order',
     receiveOrder: 'Receive Order'
-  },
-
-  // Goods Receipts
-  goodsReceipts: {
-    title: 'Goods Receipt Management',
-    receiptId: 'Receipt ID',
-    warehouse: 'Warehouse',
-    receiptDate: 'Receipt Date',
-    purchaseOrder: 'Purchase Order',
-    status: 'Status',
-    pending: 'Pending',
-    received: 'Received',
-    completed: 'Completed',
-    receiptDetails: 'Receipt Details',
-    receiptItems: 'Receipt Items',
-    addReceipt: 'Add Receipt',
-    editReceipt: 'Edit Receipt',
-    deleteReceipt: 'Delete Receipt',
-    processReceipt: 'Process Receipt'
   },
 
   // Employees

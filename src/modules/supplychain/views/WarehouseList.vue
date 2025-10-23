@@ -5,13 +5,16 @@
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <h2 class="mb-1">
-            <i class="bi bi-warehouse text-info me-2"></i>Quản lý Kho hàng
+            <i class="bi bi-warehouse text-info me-2"></i>Danh sách Kho hàng
           </h2>
-          <p class="text-muted mb-0">Quản lý thông tin các kho hàng và tồn kho</p>
+          <p class="text-muted mb-0">Xem thông tin các kho hàng và tồn kho</p>
         </div>
+        <!-- Nút Thêm - ẨN ĐI -->
+        <!-- 
         <button class="btn btn-info btn-lg shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#warehouseModal" @click="openModal()">
           <i class="bi bi-plus-circle me-2"></i>Thêm kho hàng
         </button>
+        -->
       </div>
     </div>
 
@@ -53,19 +56,21 @@
                 <div class="warehouse-icon">
                   <i class="bi bi-building"></i>
                 </div>
+                <!-- Dropdown Actions - ẨN HẾT -->
+                <!-- 
                 <div class="dropdown">
                   <button class="btn btn-sm btn-light-custom" type="button" data-bs-toggle="dropdown">
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#warehouseModal" @click.prevent="openModal(warehouse)">
-                        <i class="bi bi-pencil me-2"></i>Chỉnh sửa
+                      <a class="dropdown-item" href="#" @click.prevent="viewInventory(warehouse)">
+                        <i class="bi bi-box-seam me-2"></i>Xem tồn kho
                       </a>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="#" @click.prevent="viewInventory(warehouse)">
-                        <i class="bi bi-box-seam me-2"></i>Xem tồn kho
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#warehouseModal" @click.prevent="openModal(warehouse)">
+                        <i class="bi bi-pencil me-2"></i>Chỉnh sửa
                       </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>
@@ -76,6 +81,7 @@
                     </li>
                   </ul>
                 </div>
+                -->
               </div>
               
               <h4 class="text-white mt-3 mb-2">{{ warehouse.name }}</h4>
@@ -117,7 +123,8 @@
                 </div>
               </div>
 
-              <!-- Action Buttons -->
+              <!-- Action Buttons - ẨN HẾT -->
+              <!-- 
               <div class="d-flex gap-2 mt-4">
                 <button class="btn btn-outline-info btn-sm flex-grow-1" @click="viewDetails(warehouse)">
                   <i class="bi bi-eye me-1"></i>Chi tiết
@@ -126,6 +133,7 @@
                   <i class="bi bi-box-seam me-1"></i>Tồn kho
                 </button>
               </div>
+              -->
             </div>
           </div>
         </div>

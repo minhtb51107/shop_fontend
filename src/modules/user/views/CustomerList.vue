@@ -61,31 +61,17 @@
       </div>
     </div>
 
-    <!-- Filters and Search -->
+    <!-- Search Only - Simplified -->
     <div class="filters-section">
       <div class="filters-content">
         <div class="search-box">
           <i class="bi bi-search"></i>
           <input 
             type="text" 
-            placeholder="Tìm kiếm khách hàng..." 
+            placeholder="Tìm kiếm theo tên, email, số điện thoại..." 
             v-model="searchQuery"
             class="search-input"
           >
-        </div>
-        <div class="filter-controls">
-          <select v-model="statusFilter" class="filter-select">
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Hoạt động</option>
-            <option value="inactive">Không hoạt động</option>
-            <option value="blocked">Bị khóa</option>
-          </select>
-          <select v-model="sortBy" class="filter-select">
-            <option value="name">Sắp xếp theo tên</option>
-            <option value="created_at">Sắp xếp theo ngày tạo</option>
-            <option value="last_order">Sắp xếp theo đơn hàng cuối</option>
-            <option value="total_spent">Sắp xếp theo tổng chi tiêu</option>
-          </select>
         </div>
       </div>
     </div>
@@ -284,8 +270,6 @@ const totalCustomers = ref(0)
 const loading = ref(false)
 const error = ref('')
 const searchQuery = ref('')
-const statusFilter = ref('')
-const sortBy = ref('name')
 const currentPage = ref(1)
 const itemsPerPage = ref(12)
 const showAddModal = ref(false)
@@ -305,31 +289,38 @@ const loadCustomers = async () => {
   try {
     const params = {
       page: currentPage.value - 1, // Backend uses 0-based indexing
-      size: itemsPerPage.value,
-      sort: `${sortBy.value === 'name' ? 'fullname' : sortBy.value},asc`
+      size: itemsPerPage.value
     }
     
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
     
+    console.log('📦 Loading customers from API with params:', params)
+    
+    // ✅ GỌI API THẬT - KHÔNG MOCK
     const response = await customerService.getAll(params)
+    console.log('📦 API Response:', response.data)
     
     // Handle Spring Boot Page response format
     if (response.data && Array.isArray(response.data.content)) {
       customers.value = response.data.content
       totalCustomers.value = response.data.totalElements
+      console.log(`✅ Loaded ${customers.value.length} customers (total: ${totalCustomers.value})`)
     } else if (Array.isArray(response.data)) {
       // Fallback if not using pagination
       customers.value = response.data
       totalCustomers.value = response.data.length
+      console.log(`✅ Loaded ${customers.value.length} customers (no pagination)`)
     } else {
       // No data case
       customers.value = []
       totalCustomers.value = 0
+      console.warn('⚠️ No customer data found')
     }
   } catch (err) {
-    console.error('Error loading customers:', err)
+    console.error('❌ Error loading customers:', err)
+    console.error('❌ Error details:', err.response?.data)
     
     // Handle different error types
     if (err.response?.status === 403) {
@@ -347,8 +338,9 @@ const loadCustomers = async () => {
   }
 }
 
-// Watch for search and filter changes
-watch([searchQuery, currentPage, sortBy], () => {
+// Watch for search and page changes
+watch([searchQuery, currentPage], () => {
+  console.log('🔍 Search or page changed, reloading...')
   loadCustomers()
 }, { deep: true })
 
@@ -369,21 +361,9 @@ const customerGrowth = computed(() => {
 })
 
 const filteredCustomers = computed(() => {
-  let filtered = customers.value
-
-  // Status filter (client-side filtering for now)
-  if (statusFilter.value) {
-    const statusMap = {
-      'active': 'ACTIVE',
-      'inactive': 'INACTIVE', 
-      'blocked': 'BLOCKED'
-    }
-    filtered = filtered.filter(customer => 
-      customer.user?.status === statusMap[statusFilter.value]
-    )
-  }
-
-  return filtered
+  // ✅ KHÔNG CÒN FILTER - CHỈ HIỂN THỊ DANH SÁCH TỪ API
+  console.log('📦 Displaying customers:', customers.value.length)
+  return customers.value
 })
 
 const totalPages = computed(() => Math.ceil(totalCustomers.value / itemsPerPage.value))
@@ -445,14 +425,29 @@ const editCustomer = (customer) => {
 }
 
 const deleteCustomer = async (customer) => {
-  if (confirm(`Bạn có chắc muốn xóa khách hàng ${customer.fullname}?`)) {
-    try {
-      await customerService.delete(customer.id)
-      await loadCustomers() // Reload data
-    } catch (error) {
-      console.error('Error deleting customer:', error)
-      alert('Có lỗi xảy ra khi xóa khách hàng')
-    }
+  if (!confirm(`Bạn có chắc muốn xóa khách hàng "${customer.fullname}"?`)) {
+    return
+  }
+  
+  try {
+    console.log('🗑️ Deleting customer:', customer.id)
+    
+    // ✅ GỌI API THẬT - KHÔNG MOCK
+    await customerService.delete(customer.id)
+    console.log('✅ Customer deleted successfully')
+    
+    // ✅ RELOAD TỪ BACKEND
+    await loadCustomers()
+    
+    alert('✅ Đã xóa khách hàng thành công!')
+  } catch (error) {
+    console.error('❌ Error deleting customer:', error)
+    console.error('❌ Error details:', error.response?.data)
+    
+    const errorMsg = error.response?.data?.message || 
+                     error.response?.data?.error ||
+                     'Có lỗi xảy ra khi xóa khách hàng'
+    alert(`❌ ${errorMsg}`)
   }
 }
 
@@ -464,19 +459,32 @@ const saveCustomer = async () => {
       closeModal()
       return
     } else {
-      // Update existing customer
+      // ✅ UPDATE EXISTING CUSTOMER - GỌI API THẬT
       const updateData = {
         fullname: customerForm.value.fullname,
         phoneNumber: customerForm.value.phone_number
       }
       
+      console.log('📝 Updating customer:', selectedCustomer.value.id, updateData)
+      
+      // ✅ GỌI API THẬT - KHÔNG MOCK
       await customerService.update(selectedCustomer.value.id, updateData)
-      await loadCustomers() // Reload data
+      console.log('✅ Customer updated successfully')
+      
+      // ✅ RELOAD TỪ BACKEND
+      await loadCustomers()
+      
+      alert('✅ Đã cập nhật thông tin khách hàng thành công!')
     }
     closeModal()
   } catch (error) {
-    console.error('Error saving customer:', error)
-    alert('Có lỗi xảy ra khi lưu thông tin khách hàng')
+    console.error('❌ Error saving customer:', error)
+    console.error('❌ Error details:', error.response?.data)
+    
+    const errorMsg = error.response?.data?.message || 
+                     error.response?.data?.error ||
+                     'Có lỗi xảy ra khi lưu thông tin khách hàng'
+    alert(`❌ ${errorMsg}`)
   }
 }
 

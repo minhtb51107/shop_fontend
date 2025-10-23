@@ -409,8 +409,10 @@ const loadDashboardData = async () => {
     console.log('📦 Recent orders:', orders)
     recentOrders.value = orders.map(order => ({
       id: order.orderCode || `ORD-${order.id}`,
-      customer: order.customerName || 'Unknown',
-      amount: order.totalAmount || 0,
+      // ✅ Backend không trả về customerName, fallback = "Khách hàng #ID"
+      customer: order.customerName || `Khách hàng #${order.customerId || '?'}`,
+      // ✅ Backend trả về grandTotal, KHÔNG phải totalAmount
+      amount: order.grandTotal || order.totalAmount || 0,
       status: getOrderStatusText(order.status),
       statusClass: getOrderStatusClass(order.status)
     }))

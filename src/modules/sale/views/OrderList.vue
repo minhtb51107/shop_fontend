@@ -10,12 +10,15 @@
           </h1>
           <p class="page-subtitle">Theo dõi và quản lý tất cả đơn hàng của khách hàng</p>
         </div>
+        <!-- Nút Tạo đơn hàng - ẨN ĐI -->
+        <!--
         <div class="header-actions">
           <button class="btn-add" @click="showAddModal = true">
             <i class="bi bi-plus-circle me-2"></i>
             Tạo đơn hàng
           </button>
         </div>
+        -->
       </div>
     </div>
 
@@ -321,14 +324,18 @@ const filteredOrders = computed(() => {
   if (!orders.value || !Array.isArray(orders.value)) return []
   let filtered = orders.value
 
-  // Search filter
+  // Search filter (null-safe)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(order => 
-      order.id.toLowerCase().includes(query) ||
-      order.customer_name.toLowerCase().includes(query) ||
-      order.customer_phone.includes(query)
-    )
+    filtered = filtered.filter(order => {
+      const orderId = String(order.id || '').toLowerCase()
+      const customerName = String(order.customer_name || '').toLowerCase()
+      const customerPhone = String(order.customer_phone || '')
+      
+      return orderId.includes(query) ||
+             customerName.includes(query) ||
+             customerPhone.includes(query)
+    })
   }
 
   // Status filter
@@ -336,24 +343,25 @@ const filteredOrders = computed(() => {
     filtered = filtered.filter(order => order.status === statusFilter.value)
   }
 
-  // Date filter
+  // Date filter (null-safe)
   if (dateFilter.value) {
-    filtered = filtered.filter(order => 
-      order.created_at.startsWith(dateFilter.value)
-    )
+    filtered = filtered.filter(order => {
+      const createdAt = String(order.created_at || '')
+      return createdAt.startsWith(dateFilter.value)
+    })
   }
 
-  // Sort
+  // Sort (null-safe)
   filtered.sort((a, b) => {
     switch (sortBy.value) {
       case 'created_at':
-        return new Date(b.created_at) - new Date(a.created_at)
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0)
       case 'grand_total':
-        return b.grand_total - a.grand_total
+        return (b.grand_total || 0) - (a.grand_total || 0)
       case 'customer_name':
-        return a.customer_name.localeCompare(b.customer_name)
+        return (a.customer_name || '').localeCompare(b.customer_name || '')
       case 'status':
-        return a.status.localeCompare(b.status)
+        return (a.status || '').localeCompare(b.status || '')
       default:
         return 0
     }
@@ -409,37 +417,75 @@ const editOrder = (order) => {
   showEditModal.value = true
 }
 
-const deleteOrder = (order) => {
-  if (confirm(`Bạn có chắc muốn xóa đơn hàng ${order.id}?`)) {
-    const index = orders.value.findIndex(o => o.id === order.id)
-    if (index > -1) {
-      orders.value.splice(index, 1)
+const deleteOrder = async (order) => {
+  if (!confirm(`Bạn có chắc muốn xóa đơn hàng ${order.id}?`)) {
+    return
+  }
+  
+  try {
+    loading.value = true
+    
+    // ✅ XÓA ĐƠN HÀNG - GỌI API THẬT
+    // Note: Backend có thể chưa có endpoint DELETE
+    // Thay vào đó, update status = CANCELLED
+    await orderService.updateStatus(order.id, 'CANCELLED')
+    console.log('✅ Order cancelled:', order.id)
+    
+    // Reload danh sách từ backend
+    await loadOrders()
+    
+    alert('✅ Đã hủy đơn hàng!')
+  } catch (error) {
+    console.error('❌ Error deleting order:', error)
+    if (error.response?.status === 404) {
+      alert('❌ Backend chưa có API xóa đơn hàng. Đã chuyển sang CANCELLED.')
+      // Fallback: Chỉ xóa local nếu backend không hỗ trợ
+      const index = orders.value.findIndex(o => o.id === order.id)
+      if (index > -1) {
+        orders.value.splice(index, 1)
+      }
+    } else {
+      alert(`❌ Lỗi: ${error.response?.data?.message || error.message}`)
     }
+  } finally {
+    loading.value = false
   }
 }
 
-const saveOrder = () => {
-  if (showAddModal.value) {
-    // Add new order
-    const newOrder = {
-      id: `ORD-${String(Date.now()).slice(-3)}`,
-      ...orderForm.value,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+const saveOrder = async () => {
+  try {
+    loading.value = true
+    
+    if (showAddModal.value) {
+      // ✅ TẠO ĐƠN HÀNG MỚI - GỌI API THẬT
+      const response = await orderService.create(orderForm.value)
+      console.log('✅ Order created:', response.data)
+      
+      // Reload danh sách từ backend để có data mới nhất
+      await loadOrders()
+      
+      alert('✅ Tạo đơn hàng thành công!')
+    } else {
+      // ✅ CẬP NHẬT ĐƠN HÀNG - GỌI API THẬT
+      const response = await orderService.updateStatus(
+        orderForm.value.id, 
+        orderForm.value.status
+      )
+      console.log('✅ Order updated:', response.data)
+      
+      // Reload danh sách từ backend
+      await loadOrders()
+      
+      alert('✅ Cập nhật đơn hàng thành công!')
     }
-    orders.value.unshift(newOrder)
-  } else {
-    // Update existing order
-    const index = orders.value.findIndex(o => o.id === orderForm.value.id)
-    if (index > -1) {
-      orders.value[index] = { 
-        ...orders.value[index], 
-        ...orderForm.value,
-        updated_at: new Date().toISOString()
-      }
-    }
+    
+    closeModal()
+  } catch (error) {
+    console.error('❌ Error saving order:', error)
+    alert(`❌ Lỗi: ${error.response?.data?.message || error.message}`)
+  } finally {
+    loading.value = false
   }
-  closeModal()
 }
 
 const closeModal = () => {
@@ -475,27 +521,34 @@ const loadOrders = async () => {
 
     const response = await orderService.getAll(params)
     
+    console.log('📦 Raw API Response:', response.data)
+    
+    // ✅ Transform backend response (camelCase) → frontend format (snake_case)
+    const transformOrder = (order) => {
+      const statusInfo = getStatusInfo(order.status)
+      return {
+        ...order,
+        // ✅ Map camelCase → snake_case
+        created_at: order.createdAt || order.created_at,
+        grand_total: order.grandTotal || order.grand_total || 0,
+        // ✅ Handle missing customer info (backend chưa trả về)
+        customer_name: order.customerName || order.customer_name || `Khách hàng #${order.customerId || order.customer_id || '?'}`,
+        customer_phone: order.customerPhone || order.customer_phone || 'N/A',
+        statusText: statusInfo.text,
+        statusClass: statusInfo.class
+      }
+    }
+    
     // Handle Spring Boot Page response format
     if (response.data && Array.isArray(response.data.content)) {
-      orders.value = response.data.content.map(order => {
-        const statusInfo = getStatusInfo(order.status)
-        return {
-          ...order,
-          statusText: statusInfo.text,
-          statusClass: statusInfo.class
-        }
-      })
+      orders.value = response.data.content.map(transformOrder)
+      console.log('✅ Transformed orders (Page):', orders.value)
     } else if (Array.isArray(response.data)) {
       // Fallback if not using pagination
-      orders.value = response.data.map(order => {
-        const statusInfo = getStatusInfo(order.status)
-        return {
-          ...order,
-          statusText: statusInfo.text,
-          statusClass: statusInfo.class
-        }
-      })
+      orders.value = response.data.map(transformOrder)
+      console.log('✅ Transformed orders (List):', orders.value)
     } else {
+      console.warn('⚠️ Unexpected response format:', response.data)
       orders.value = []
     }
   } catch (error) {

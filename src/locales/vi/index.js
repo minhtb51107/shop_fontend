@@ -54,7 +54,6 @@ export default {
     suppliers: 'Nhà cung cấp',
     warehouses: 'Kho hàng',
     purchaseOrders: 'Đơn mua hàng',
-    goodsReceipts: 'Phiếu nhập kho',
     customers: 'Khách hàng',
     employees: 'Nhân viên',
     roles: 'Vai trò',
@@ -235,25 +234,6 @@ export default {
     submitOrder: 'Gửi đơn hàng',
     approveOrder: 'Duyệt đơn hàng',
     receiveOrder: 'Nhận đơn hàng'
-  },
-
-  // Goods Receipts
-  goodsReceipts: {
-    title: 'Quản lý phiếu nhập kho',
-    receiptId: 'Mã phiếu nhập',
-    warehouse: 'Kho',
-    receiptDate: 'Ngày nhập',
-    purchaseOrder: 'Đơn mua hàng',
-    status: 'Trạng thái',
-    pending: 'Chờ xử lý',
-    received: 'Đã nhận',
-    completed: 'Hoàn thành',
-    receiptDetails: 'Chi tiết phiếu nhập',
-    receiptItems: 'Sản phẩm nhập',
-    addReceipt: 'Thêm phiếu nhập',
-    editReceipt: 'Sửa phiếu nhập',
-    deleteReceipt: 'Xóa phiếu nhập',
-    processReceipt: 'Xử lý phiếu nhập'
   },
 
   // Employees

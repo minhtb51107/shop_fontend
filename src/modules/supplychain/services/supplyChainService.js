@@ -113,46 +113,6 @@ export const purchaseOrderService = {
 };
 
 // ===================================================================
-// GOODS RECEIPT SERVICES - Quản lý phiếu nhập kho
-// Backend: GoodsReceiptController.java
-// ===================================================================
-export const goodsReceiptService = {
-  getAll: (params = {}) => {
-    const queryParams = new URLSearchParams();
-    if (params.page !== undefined) queryParams.append('page', params.page);
-    if (params.size !== undefined) queryParams.append('size', params.size);
-    if (params.sort) queryParams.append('sort', params.sort);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.warehouseId) queryParams.append('warehouseId', params.warehouseId);
-    
-    const url = `/api/v1/goods-receipts${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    return api.get(url);
-  },
-  
-  getById: (id) => api.get(`/api/v1/goods-receipts/${id}`),
-  
-  create: (data) => api.post('/api/v1/goods-receipts', data),
-  
-  // Note: Backend chưa có endpoint update goods receipt
-  // update: (id, data) => api.put(`/api/v1/goods-receipts/${id}`, data),
-  
-  delete: (id) => api.delete(`/api/v1/goods-receipts/${id}`),
-  
-  // Hoàn thành phiếu nhập kho (cập nhật tồn kho)
-  complete: (id) => api.post(`/api/v1/goods-receipts/${id}/complete`),
-  
-  // API cho các items trong phiếu nhập
-  // Backend: GoodsReceiptItemController.java
-  // Note: Base path là /api/goods-receipts (không có v1)
-  addItem: (receiptId, itemData) => api.post(`/api/goods-receipts/${receiptId}/items`, itemData),
-  
-  // Note: Backend chưa có các endpoint sau cho items:
-  // updateItem: (itemId, itemData) => api.put(`/api/goods-receipts/items/${itemId}`, itemData),
-  // deleteItem: (itemId) => api.delete(`/api/goods-receipts/items/${itemId}`),
-  // getItems: (receiptId) => api.get(`/api/goods-receipts/${receiptId}/items`)
-};
-
-// ===================================================================
 // INVENTORY SERVICES - Quản lý tồn kho
 // Backend: InventoryController.java
 // ===================================================================

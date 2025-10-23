@@ -5,13 +5,16 @@
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <h2 class="mb-1">
-            <i class="bi bi-truck text-primary me-2"></i>Quản lý Nhà cung cấp
+            <i class="bi bi-truck text-primary me-2"></i>Danh sách Nhà cung cấp
           </h2>
-          <p class="text-muted mb-0">Quản lý thông tin các nhà cung cấp của bạn</p>
+          <p class="text-muted mb-0">Xem thông tin các nhà cung cấp</p>
         </div>
+        <!-- Nút Thêm - ẨN ĐI -->
+        <!-- 
         <button class="btn btn-primary btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#supplierModal" @click="openModal()">
           <i class="bi bi-plus-circle me-2"></i>Thêm nhà cung cấp
         </button>
+        -->
       </div>
     </div>
 
@@ -66,6 +69,8 @@
                 <div class="supplier-icon">
                   <i class="bi bi-building"></i>
                 </div>
+                <!-- Dropdown Actions - ẨN ĐI (chỉ xem) -->
+                <!-- 
                 <div class="dropdown">
                   <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
                     <i class="bi bi-three-dots-vertical"></i>
@@ -84,6 +89,7 @@
                     </li>
                   </ul>
                 </div>
+                -->
               </div>
 
               <h5 class="card-title mb-3">{{ supplier.name }}</h5>
@@ -105,9 +111,12 @@
                 <small class="text-muted">
                   <i class="bi bi-box-seam me-1"></i>{{ supplier.totalOrders || 0 }} đơn hàng
                 </small>
+                <!-- Nút Chi tiết - ẨN ĐI -->
+                <!-- 
                 <button class="btn btn-sm btn-primary" @click="viewDetails(supplier)">
                   Chi tiết <i class="bi bi-arrow-right ms-1"></i>
                 </button>
+                -->
               </div>
             </div>
           </div>

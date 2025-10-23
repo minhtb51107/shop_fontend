@@ -125,12 +125,6 @@ const router = createRouter({
           props: true,
           meta: { title: 'Chi tiết đơn mua hàng' }
         },
-        { 
-          path: 'goods-receipts', 
-          name: 'goods-receipts-list', 
-          component: () => import('../modules/supplychain/views/GoodsReceiptList.vue'),
-          meta: { title: 'Quản lý phiếu nhập kho' }
-        },
         
         // Product Routes
         { 

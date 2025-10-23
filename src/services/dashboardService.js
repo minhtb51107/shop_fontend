@@ -36,8 +36,9 @@ export const dashboardService = {
       })
       
       // Tính tổng doanh thu từ tất cả orders
+      // ✅ Backend trả về grandTotal (camelCase), KHÔNG phải totalAmount
       const totalRevenue = allOrders.reduce((sum, order) => {
-        return sum + (order.totalAmount || 0)
+        return sum + (order.grandTotal || order.totalAmount || 0)
       }, 0)
       
       console.log('✅ Got stats:', {

@@ -380,7 +380,11 @@ const loadEmployees = async () => {
       sort: `${sortBy.value === 'fullname' ? 'fullname' : sortBy.value},asc`
     }
     
+    console.log('👥 Loading employees from API with params:', params)
+    
+    // ✅ GỌI API THẬT - KHÔNG MOCK
     const response = await employeeService.getAll(params)
+    console.log('👥 API Response:', response.data)
     
     // Handle Spring Boot Page response format
     if (response.data && Array.isArray(response.data.content)) {
@@ -389,6 +393,7 @@ const loadEmployees = async () => {
         statusClass: emp.isActive ? 'status-active' : 'status-inactive'
       }))
       totalEmployees.value = response.data.totalElements
+      console.log(`✅ Loaded ${employees.value.length} employees (total: ${totalEmployees.value})`)
     } else if (Array.isArray(response.data)) {
       // Fallback if not using pagination
       employees.value = response.data.map(emp => ({
@@ -396,13 +401,16 @@ const loadEmployees = async () => {
         statusClass: emp.isActive ? 'status-active' : 'status-inactive'
       }))
       totalEmployees.value = response.data.length
+      console.log(`✅ Loaded ${employees.value.length} employees (no pagination)`)
     } else {
       // No data case
       employees.value = []
       totalEmployees.value = 0
+      console.warn('⚠️ No employee data found')
     }
   } catch (err) {
-    console.error('Error loading employees:', err)
+    console.error('❌ Error loading employees:', err)
+    console.error('❌ Error details:', err.response?.data)
     
     // Handle different error types
     if (err.response?.status === 403) {
@@ -499,21 +507,38 @@ const editEmployee = (employee) => {
     position: employee.position || '',
     department: employee.department || '',
     hiredDate: employee.hiredDate,
+    status: employee.isActive ? 'active' : 'inactive', // ✅ Thêm status field
     roleNames: employee.roleNames || []
   }
   selectedEmployee.value = employee
   showEditModal.value = true
+  console.log('📝 Editing employee:', employee.id, 'Current status:', employee.isActive ? 'active' : 'inactive')
 }
 
 const deleteEmployee = async (employee) => {
-  if (confirm(`Bạn có chắc muốn xóa nhân viên ${employee.fullname}?`)) {
-    try {
-      await employeeService.updateStatus(employee.id, false)
-      await loadEmployees()
-    } catch (error) {
-      console.error('Error updating employee status:', error)
-      alert('Có lỗi xảy ra khi cập nhật trạng thái nhân viên')
-    }
+  if (!confirm(`Bạn có chắc muốn vô hiệu hóa nhân viên "${employee.fullname}"?\n\n(Sẽ chuyển sang trạng thái "Không hoạt động")`)) {
+    return
+  }
+  
+  try {
+    console.log('🗑️ Deactivating employee:', employee.id)
+    
+    // ✅ GỌI API UPDATE với isActive = false
+    await employeeService.update(employee.id, { isActive: false })
+    console.log('✅ Employee deactivated successfully')
+    
+    // ✅ RELOAD TỪ BACKEND
+    await loadEmployees()
+    
+    alert('✅ Đã vô hiệu hóa nhân viên thành công!')
+  } catch (error) {
+    console.error('❌ Error deactivating employee:', error)
+    console.error('❌ Error details:', error.response?.data)
+    
+    const errorMsg = error.response?.data?.message || 
+                     error.response?.data?.error ||
+                     'Có lỗi xảy ra khi vô hiệu hóa nhân viên'
+    alert(`❌ ${errorMsg}`)
   }
 }
 
@@ -532,18 +557,25 @@ const saveEmployee = async () => {
         roleNames: employeeForm.value.roleNames
       }
       
+      console.log('➕ Creating employee:', createData)
       await employeeService.create(createData)
+      console.log('✅ Employee created successfully')
+      alert('✅ Đã thêm nhân viên thành công!')
     } else {
-      // Update existing employee - need to check UpdateEmployeeRequest structure
+      // ✅ Update existing employee với isActive status
       const updateData = {
         fullname: employeeForm.value.fullname,
         employeeCode: employeeForm.value.employeeCode,
         position: employeeForm.value.position,
         department: employeeForm.value.department,
-        hiredDate: employeeForm.value.hiredDate
+        hiredDate: employeeForm.value.hiredDate,
+        isActive: employeeForm.value.status === 'active' // ✅ Thêm isActive
       }
       
+      console.log('📝 Updating employee:', selectedEmployee.value.id, updateData)
+      
       await employeeService.update(selectedEmployee.value.id, updateData)
+      console.log('✅ Employee updated successfully')
       
       // Assign roles separately if roles were changed
       if (employeeForm.value.roleNames.length > 0) {
@@ -551,13 +583,21 @@ const saveEmployee = async () => {
           roleNames: employeeForm.value.roleNames
         })
       }
+      
+      alert('✅ Đã cập nhật thông tin nhân viên thành công!')
     }
     
-    await loadEmployees() // Reload data
+    // ✅ RELOAD DATA FROM BACKEND
+    await loadEmployees()
     closeModal()
   } catch (error) {
-    console.error('Error saving employee:', error)
-    alert('Có lỗi xảy ra khi lưu thông tin nhân viên')
+    console.error('❌ Error saving employee:', error)
+    console.error('❌ Error details:', error.response?.data)
+    
+    const errorMsg = error.response?.data?.message || 
+                     error.response?.data?.error ||
+                     'Có lỗi xảy ra khi lưu thông tin nhân viên'
+    alert(`❌ ${errorMsg}`)
   }
 }
 

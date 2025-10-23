@@ -76,15 +76,13 @@ export const promotionService = {
     return api.post('/api/v1/promotions', data);
   },
   
-  // Note: Backend chưa có endpoint update promotion
-  // update(id, data) {
-  //   return api.put(`/api/v1/promotions/${id}`, data);
-  // },
+  update(id, data) {
+    return api.put(`/api/v1/promotions/${id}`, data);
+  },
   
-  // Note: Backend chưa có endpoint delete promotion
-  // delete(id) {
-  //   return api.delete(`/api/v1/promotions/${id}`);
-  // }
+  delete(id) {
+    return api.delete(`/api/v1/promotions/${id}`);
+  }
 };
 
 // ===================================================================
