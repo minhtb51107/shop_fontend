@@ -4,15 +4,15 @@ import HomeView from '../views/HomeView.vue';
 import ProductsView from '../views/ProductsView.vue';
 import ProductDetailView from '../views/ProductDetailView.vue';
 import CartView from '../views/CartView.vue';
-import LoginView from '../views/LoginView.vue'; // <-- Import LoginView
-import RegisterView from '../views/RegisterView.vue'; // <-- Import RegisterView
-import ProfileView from '../views/ProfileView.vue'; // <-- Import ProfileView
-import CheckoutView from '../views/CheckoutView.vue'; // <-- Import CheckoutView
-import OrderConfirmationView from '../views/OrderConfirmationView.vue'; // <-- Import trang xác nhận (sẽ tạo)
-import ForgotPasswordView from '../views/ForgotPasswordView.vue'; // <-- Import
-import ResetPasswordView from '../views/ResetPasswordView.vue';   // <-- Import
-import TermsView from '../views/TermsView.vue'; // Import component mới
-import OrderHistoryView from '../views/OrderHistoryView.vue'; // <-- Import view mới
+import LoginView from '../views/LoginView.vue';
+import RegisterView from '../views/RegisterView.vue';
+import ProfileView from '../views/ProfileView.vue';
+import CheckoutView from '../views/CheckoutView.vue';
+import OrderConfirmationView from '../views/OrderConfirmationView.vue';
+import ForgotPasswordView from '../views/ForgotPasswordView.vue';
+import ResetPasswordView from '../views/ResetPasswordView.vue';
+import TermsView from '../views/TermsView.vue';
+import OrderHistoryView from '../views/OrderHistoryView.vue';
 import OrderDetailView from '../views/OrderDetailView.vue';
 
 const router = createRouter({
@@ -22,14 +22,14 @@ const router = createRouter({
        path: '/orders',
        name: 'orders',
        component: OrderHistoryView,
-       meta: { title: 'Lịch Sử Đơn Hàng', requiresAuth: true } // Yêu cầu đăng nhập
+       meta: { title: 'Lịch Sử Đơn Hàng', requiresAuth: true }
      },
      {
-       path: '/orders/:id', // Route động với tham số id (là ID đơn hàng)
+       path: '/orders/:id',
        name: 'orderDetail',
        component: OrderDetailView,
-       props: true, // Tự động truyền params (id) vào làm props
-       meta: { title: 'Chi Tiết Đơn Hàng', requiresAuth: true } // Yêu cầu đăng nhập
+       props: true,
+       meta: { title: 'Chi Tiết Đơn Hàng', requiresAuth: true }
      },
     {
     path: '/terms',
@@ -37,7 +37,6 @@ const router = createRouter({
     component: TermsView,
     meta: { title: 'Điều Khoản Dịch Vụ' }
     },
-    // --- THÊM ROUTES FORGOT/RESET PASSWORD ---
     {
       path: '/forgot-password',
       name: 'forgotPassword',
@@ -45,31 +44,28 @@ const router = createRouter({
       meta: { title: 'Quên Mật khẩu', guestOnly: true }
     },
     {
-      // Sử dụng query param (?token=...) thay vì route param (/reset-password/token)
-      // Dễ dàng hơn khi backend gửi link qua email
       path: '/reset-password',
       name: 'resetPassword',
       component: ResetPasswordView,
-      meta: { title: 'Đặt Lại Mật khẩu', guestOnly: true } // Chỉ cho phép truy cập khi chưa đăng nhập
+      meta: { title: 'Đặt Lại Mật khẩu', guestOnly: true }
     },
     {
        path: '/checkout',
-       name: 'checkout',
-       component: CheckoutView, // <-- Trỏ đến component CheckoutView
-       meta: { title: 'Thanh Toán', requiresAuth: true }
+       name: 'Checkout', // Tên route
+       component: CheckoutView,
+       meta: { title: 'Thanh Toán', requiresAuth: true } // Yêu cầu đăng nhập
      },
-     // --- THÊM ROUTE XÁC NHẬN ĐƠN HÀNG ---
      {
-         path: '/order-confirmation/:orderId', // Route động với orderId
-         name: 'orderConfirmation',
-         component: OrderConfirmationView,
-         props: true, // Truyền orderId vào làm prop
-         meta: { title: 'Xác Nhận Đơn Hàng', requiresAuth: true }
+       path: '/order-confirmation/:orderId',
+       name: 'orderConfirmation',
+       component: OrderConfirmationView,
+       props: true,
+       meta: { title: 'Xác Nhận Đơn Hàng', requiresAuth: true }
      },
     {
        path: '/profile',
        name: 'profile',
-       component: ProfileView, // <-- Trỏ đến component ProfileView
+       component: ProfileView,
        meta: { title: 'Hồ Sơ Của Tôi', requiresAuth: true }
      },
     {
@@ -97,62 +93,66 @@ const router = createRouter({
       component: CartView,
       meta: { title: 'Giỏ Hàng' }
     },
-    // --- THÊM ROUTES ĐĂNG NHẬP / ĐĂNG KÝ ---
     {
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { title: 'Đăng Nhập', guestOnly: true } // guestOnly: chỉ truy cập khi chưa đăng nhập
+      meta: { title: 'Đăng Nhập', guestOnly: true }
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta: { title: 'Đăng Ký', guestOnly: true } // guestOnly: chỉ truy cập khi chưa đăng nhập
+      meta: { title: 'Đăng Ký', guestOnly: true }
     },
-     {
-       path: '/checkout',
-       name: 'checkout',
-       // component: () => import('../views/CheckoutView.vue'),
-       component: CartView, // Tạm thời dùng CartView để test
-       meta: { title: 'Thanh Toán', requiresAuth: true } // requiresAuth: cần đăng nhập
-     },
   ]
 });
 
 // --- NAVIGATION GUARD ---
 router.beforeEach(async (to, from, next) => {
+  console.log(`Navigating from ${from.fullPath} to ${to.fullPath}`); // <-- LOG 1: Bắt đầu guard
+
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const guestOnly = to.matched.some(record => record.meta.guestOnly);
 
-  // Cố gắng fetch thông tin user nếu có token nhưng chưa có user data (ví dụ khi refresh trang)
+  // <-- LOG 2: Trạng thái trước khi check auth -->
+  console.log(`Route meta: requiresAuth=${requiresAuth}, guestOnly=${guestOnly}`);
+  console.log(`Auth state before check: isAuthenticated=${authStore.isAuthenticated}, hasToken=${!!authStore.accessToken}, user=${JSON.stringify(authStore.user)}`);
+
+  // Cố gắng fetch thông tin user nếu có token nhưng chưa có user data
   if (authStore.accessToken && !authStore.user) {
-    await authStore.checkAuthStatus(); // checkAuthStatus đã bao gồm fetchUser và refresh token nếu cần
+    console.log('Token exists but no user data, attempting checkAuthStatus...'); // <-- LOG 3: Gọi checkAuthStatus
+    try {
+        await authStore.checkAuthStatus();
+        console.log(`Auth state after checkAuthStatus: isAuthenticated=${authStore.isAuthenticated}, user=${JSON.stringify(authStore.user)}`); // <-- LOG 4: Kết quả checkAuthStatus
+    } catch (error) {
+        console.error('Error during checkAuthStatus:', error); // <-- LOG 5: Lỗi checkAuthStatus
+        // Có thể quyết định next('/login') ở đây nếu checkAuthStatus thất bại nghiêm trọng
+    }
   }
 
   if (requiresAuth && !authStore.isAuthenticated) {
     // Nếu route yêu cầu đăng nhập và user chưa đăng nhập
-    console.log(`Redirecting to login. Attempted to access: ${to.fullPath}`);
-    authStore.returnUrl = to.fullPath; // Lưu lại URL muốn truy cập
+    console.warn(`Access DENIED to ${to.fullPath}. User not authenticated. Redirecting to login.`); // <-- LOG 6: Chặn vì chưa đăng nhập
+    authStore.returnUrl = to.fullPath;
     next({ name: 'login' });
   } else if (guestOnly && authStore.isAuthenticated) {
-    // Nếu route chỉ dành cho khách (chưa đăng nhập) và user đã đăng nhập
-    console.log(`Already logged in. Redirecting from guest-only route: ${to.name}`);
-    next({ name: 'home' }); // Chuyển về trang chủ
+    // Nếu route chỉ dành cho khách và user đã đăng nhập
+    console.warn(`Access DENIED to ${to.fullPath}. Route is guest-only. Redirecting to home.`); // <-- LOG 7: Chặn vì đã đăng nhập
+    next({ name: 'home' });
   } else {
     // Cho phép truy cập bình thường
+    console.log(`Access GRANTED to ${to.fullPath}. Calling next().`); // <-- LOG 8: Cho phép truy cập
     next();
   }
 
-  // Cập nhật tiêu đề trang (đã có ở Giai đoạn 3)
-   if (to.name === 'productDetail' && to.params.id) {
-       // Cập nhật title sau khi fetch product (logic này nên ở trong ProductDetailView)
-       document.title = `Sản phẩm ${to.params.id} - Shop Điện Tử`;
-   } else {
-       document.title = to.meta.title ? `${to.meta.title} - Shop Điện Tử` : 'Shop Điện Tử';
-   }
-
+  // Cập nhật tiêu đề trang
+  let pageTitle = 'Shop Điện Tử';
+  if (to.meta.title) {
+      pageTitle = `${to.meta.title} - Shop Điện Tử`;
+  }
+  document.title = pageTitle;
 });
 
 
